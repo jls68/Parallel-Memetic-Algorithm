@@ -110,9 +110,14 @@ public class Main {
      */
     private static Genotype Repair(Genotype solution) {
 
-        int[] connectionOnNode = new int[numberOfNodes];
+        Node[] nodes = new Node[numberOfNodes];
+        for (int i = 0; i < numberOfNodes; i++) {
+            nodes[i] = new Node(i);
+        }
+
         int nodeIndex = 0;
         int genotypeIndex = 0;
+
         // Look through each link making up the nodes
         while(genotypeIndex < solution.length()){
             // Find the range of new links connected to the node at the current nodeIndex
@@ -125,27 +130,51 @@ public class Main {
                 i = nodeConnections.nextSetBit(i);
                 // if a set bit was found
                 if(i < nodeConnections.length()){
-                    // Add one to the current node
-                    connectionOnNode[nodeIndex]++;
-                    // Add one to the connecting node
-                    connectionOnNode[nodeIndex + 1 + i]++;
+                    // Record the link between the two nodes
+                    new Link(nodes[nodeIndex], nodes[nodeIndex + 1 + i]);
 
-                    // If either nodes has too many connections then remove the last added
-                    if (connectionOnNode[nodeIndex] > maxConnection || connectionOnNode[nodeIndex + 1 + i] > maxConnection) {
-                        solution.set(i, false);
-                        connectionOnNode[nodeIndex]--;
-                        connectionOnNode[nodeIndex + 1 + i]--;
+                    // If either nodes has too many connections then remove a random connection from that node
+                    if (nodes[nodeIndex].exceedLimit(maxConnection)) {
+                        nodes[nodeIndex].removeRandomLink(rand);
+                    }
+                    // Check the other node in case it still has too many connections
+                    if (nodes[nodeIndex + 1 + i].exceedLimit(maxConnection)){
+                        nodes[nodeIndex + 1 + i].removeRandomLink(rand);
                     }
                 }
             }
-
-            //TODO
-            // Check that the node has some connection to all other nodes
 
             // Increment to look at the next node and set of links
             nodeIndex++;
             genotypeIndex += range;
         }
+
+        //TODO
+        // Check that each node has some connection to all other nodes
+        boolean infeasibleSolution = true;
+        while(infeasibleSolution) {
+            infeasibleSolution = false;
+            Node[] connectedNodes = nodes[0].checkNodesConnected(new Node[numberOfNodes]);
+            // Start checking at a random spot to allow random nodes to be repaired
+            int startIndex = rand.nextInt(connectedNodes.length);
+            // Check second partition
+            for (int i = startIndex; i < connectedNodes.length; i++) {
+                if (connectedNodes[i] == null) {
+                    infeasibleSolution = true;
+                    nodes[i].addNewRandomLink(connectedNodes, rand, maxConnection);
+                    break; // Break to check if the change has connected all other nodes
+                }
+            }
+            // Check first partition if no node has been found to not be connected
+            for (int i = 0; i < startIndex && infeasibleSolution == false; i++) {
+                if (connectedNodes[i] == null) {
+                    infeasibleSolution = true;
+                    nodes[i].addNewRandomLink(connectedNodes, rand, maxConnection);
+                    break; // Break to check if the change has connected all other nodes
+                }
+            }
+        }
+
         return solution;
     }
 
@@ -248,6 +277,6 @@ public class Main {
         } while(!TerminationCriterion());
 
         //TODO
-        // Output result
+        // Output result\
     }
 }

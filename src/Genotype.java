@@ -1,3 +1,5 @@
+import java.util.Arrays;
+
 public class Genotype {
 
     boolean[] encodedSolution;
@@ -54,5 +56,12 @@ public class Genotype {
         }
         // Return encodedSolution.length if no next set bit
         return i;
+    }
+
+    @Override
+    public String toString() {
+        return "Genotype{" +
+                "encodedSolution=" + Arrays.toString(encodedSolution) +
+                '}';
     }
 }
