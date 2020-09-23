@@ -2,17 +2,17 @@ import java.util.BitSet;
 
 public class Population {
 
-    BitSet[] encodedSolutions;
+    Genotype[] encodedSolutions;
 
     public Population(int popSize){
-        encodedSolutions = new BitSet[popSize];
+        encodedSolutions = new Genotype[popSize];
     }
 
     public int Size() {
         return encodedSolutions.length;
     }
 
-    public void Insert(int index, BitSet newSolution){
+    public void Insert(int index, Genotype newSolution){
         encodedSolutions[index] = newSolution;
     }
 
@@ -22,8 +22,8 @@ public class Population {
         return false;
     }
 
-    public BitSet ExtractBest(){
-        BitSet best = encodedSolutions[0];
+    public Genotype ExtractBest(){
+        Genotype best = encodedSolutions[0];
         //TODO
         // Search for best solution
         return best;

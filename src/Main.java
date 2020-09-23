@@ -1,5 +1,4 @@
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 import java.util.Random;
 
@@ -22,7 +21,7 @@ public class Main {
 
         // Generate and add the genotype encoded solutions to the initial population
         for(int i = 0; i < popSize; i++) {
-            BitSet s = GenerateRandomConfiguration();
+            Genotype s = GenerateRandomConfiguration();
 
             // Preform local Search
             s = LocalSearch(s);
@@ -38,8 +37,8 @@ public class Main {
      * Create a random solution configuration
      * @return a new solution in genotype space
      */
-    private static BitSet GenerateRandomConfiguration(){
-        BitSet s = new BitSet(numberOfUniqueLinks);
+    private static Genotype GenerateRandomConfiguration(){
+        Genotype s = new Genotype(numberOfUniqueLinks);
 
         // Create random solution
         for(int j = 0; j < s.length(); j++){
@@ -60,10 +59,10 @@ public class Main {
      * @param currentGeno the current solution in genotype space
      * @return the local best solution in genotype space
      */
-    private static BitSet LocalSearch(BitSet currentGeno){
+    private static Genotype LocalSearch(Genotype currentGeno){
         List<Integer> currentPheno = Growth(currentGeno);
         do{
-            BitSet newGeno = GenerateNeighbour(currentGeno);
+            Genotype newGeno = GenerateNeighbour(currentGeno);
             newGeno = Repair(newGeno);
             List<Integer> newPheno = Growth(newGeno);
             if(Evaluate(newPheno) < Evaluate(currentPheno)){
@@ -79,19 +78,19 @@ public class Main {
      * @param current solution in genotype space
      * @return a neighbour solution in genotype space
      */
-    private static BitSet GenerateNeighbour(BitSet current){
+    private static Genotype GenerateNeighbour(Genotype current){
         int i = rand.nextInt(current.length());
-        BitSet neighbour = (BitSet)current.clone();
+        Genotype neighbour = (Genotype)current.clone();
         neighbour.flip(i);
         return neighbour;
     }
 
     /**
-     * Convert the BitSet genotype into an Integer list phenotype
+     * Convert the genotype into an Integer list phenotype
      * @param genotype of the solution
      * @return the phenotype of that solution
      */
-    private static List<Integer> Growth(BitSet genotype){
+    private static List<Integer> Growth(Genotype genotype){
         List<Integer> phenotype = new ArrayList<>();
 
         //TODO
@@ -105,7 +104,7 @@ public class Main {
      * @param solution in genotype space
      * @return genotype of a feasible solution
      */
-    private static BitSet Repair(BitSet solution) {
+    private static Genotype Repair(Genotype solution) {
 
         int[] connectedNodes = new int[numberOfNodes];
         int nodeIndex = 0;
@@ -114,22 +113,25 @@ public class Main {
         while(genotypeIndex < solution.length()){
             // Find the range of new links connected to the node at the current nodeIndex
             int range = (numberOfNodes - 1) - nodeIndex;
-            BitSet nodeConnections = solution.get(genotypeIndex, genotypeIndex + range);
+            Genotype nodeConnections = solution.get(genotypeIndex, genotypeIndex + range);
 
             // Check each set link for the current node
             for(int i = 0; i < nodeConnections.length(); i++){
                 // Set i to the index of the next set bit
                 i = nodeConnections.nextSetBit(i);
-                // Add one to the current node
-                connectedNodes[nodeIndex]++;
-                // Add one to the connecting node
-                connectedNodes[nodeIndex + 1 + i]++;
+                // if a set bit was found
+                if(i < nodeConnections.length()){
+                    // Add one to the current node
+                    connectedNodes[nodeIndex]++;
+                    // Add one to the connecting node
+                    connectedNodes[nodeIndex + 1 + i]++;
 
-                // If either nodes has too many connections then remove the last added
-                if(connectedNodes[nodeIndex] > maxConnection || connectedNodes[nodeIndex + 1 + i] > maxConnection) {
-                    solution.set(i, false);
-                    connectedNodes[nodeIndex]--;
-                    connectedNodes[nodeIndex + 1 + i]--;
+                    // If either nodes has too many connections then remove the last added
+                    if (connectedNodes[nodeIndex] > maxConnection || connectedNodes[nodeIndex + 1 + i] > maxConnection) {
+                        solution.set(i, false);
+                        connectedNodes[nodeIndex]--;
+                        connectedNodes[nodeIndex + 1 + i]--;
+                    }
                 }
             }
 
@@ -193,11 +195,11 @@ public class Main {
         // preserve is the percent of the solution to keep when restarting
         int numberPreserved = (int)(pop.Size() * preserve);
         for (int i = 0; i < numberPreserved; i++){
-            BitSet s = pop.ExtractBest();
+            Genotype s = pop.ExtractBest();
             newpop.Insert(i, s);
         }
         for(int i = numberPreserved; i < pop.Size(); i++){
-            BitSet s = GenerateRandomConfiguration();
+            Genotype s = GenerateRandomConfiguration();
             s = LocalSearch(s);
             newpop.Insert(i, s);
         }
@@ -223,7 +225,7 @@ public class Main {
         maxConnection = 2;
         linkLengths = new int[numberOfUniqueLinks];
         for (int i = 0; i < numberOfUniqueLinks; i++) {
-            linkLengths[i] = i;
+            linkLengths[i] = i + 1;
         }
 
         preserve = 0.2; // This is the only optional parameter that can have a default value
