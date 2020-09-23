@@ -18,6 +18,14 @@ public class Population {
 
     public boolean hasConverged(){
         //TODO
+        // Check for convergence
         return false;
+    }
+
+    public BitSet ExtractBest(){
+        BitSet best = encodedSolutions[0];
+        //TODO
+        // Search for best solution
+        return best;
     }
 }
