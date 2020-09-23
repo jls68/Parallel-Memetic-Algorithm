@@ -93,8 +93,12 @@ public class Main {
     private static List<Integer> Growth(Genotype genotype){
         List<Integer> phenotype = new ArrayList<>();
 
-        //TODO
         // Convert genotype into phenotype
+        for(int i = 0; i < genotype.length(); i++){
+            if(genotype.isSet(i)){
+                phenotype.add(linkLengths[i]);
+            }
+        }
 
         return phenotype;
     }
@@ -106,7 +110,7 @@ public class Main {
      */
     private static Genotype Repair(Genotype solution) {
 
-        int[] connectedNodes = new int[numberOfNodes];
+        int[] connectionOnNode = new int[numberOfNodes];
         int nodeIndex = 0;
         int genotypeIndex = 0;
         // Look through each link making up the nodes
@@ -122,15 +126,15 @@ public class Main {
                 // if a set bit was found
                 if(i < nodeConnections.length()){
                     // Add one to the current node
-                    connectedNodes[nodeIndex]++;
+                    connectionOnNode[nodeIndex]++;
                     // Add one to the connecting node
-                    connectedNodes[nodeIndex + 1 + i]++;
+                    connectionOnNode[nodeIndex + 1 + i]++;
 
                     // If either nodes has too many connections then remove the last added
-                    if (connectedNodes[nodeIndex] > maxConnection || connectedNodes[nodeIndex + 1 + i] > maxConnection) {
+                    if (connectionOnNode[nodeIndex] > maxConnection || connectionOnNode[nodeIndex + 1 + i] > maxConnection) {
                         solution.set(i, false);
-                        connectedNodes[nodeIndex]--;
-                        connectedNodes[nodeIndex + 1 + i]--;
+                        connectionOnNode[nodeIndex]--;
+                        connectionOnNode[nodeIndex + 1 + i]--;
                     }
                 }
             }
@@ -242,5 +246,8 @@ public class Main {
                 pop = RestartPopulation(pop);
             }
         } while(!TerminationCriterion());
+
+        //TODO
+        // Output result
     }
 }

@@ -14,6 +14,10 @@ public class Genotype {
         encodedSolution[index] = !encodedSolution[index];
     }
 
+    public boolean isSet(int index){
+        return encodedSolution[index] == true;
+    }
+
     /**
      * Get a subset of the genotype
      * @param startIndex inclusive
@@ -44,7 +48,7 @@ public class Genotype {
 
     public int nextSetBit(int i) {
         for(i = i; i < encodedSolution.length; i++){
-            if(encodedSolution[i] == true){
+            if(isSet(i)){
                 return i;
             }
         }
