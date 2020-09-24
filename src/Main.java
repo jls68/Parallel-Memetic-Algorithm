@@ -199,9 +199,19 @@ public class Main {
     private static Population GenerateNewPopulation(Population pop){
         Population newpop = new Population(pop.Size());
         //TODO
-        // Recombination
-        // mutation
+        // Recombination that has implicit mutation
         return newpop;
+    }
+
+    /**
+     * Mutate solution
+     * @param solution
+     * @return
+     */
+    private static Solution Mutate(Solution solution){
+        int i = rand.Next(solution.length);
+        solution.flip(i);
+        return solution;
     }
 
     /**
