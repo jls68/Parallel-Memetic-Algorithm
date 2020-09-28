@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.BitSet;
 
 public class Population {
@@ -6,6 +7,10 @@ public class Population {
 
     public Population(int popSize){
         encodedSolutions = new Genotype[popSize];
+    }
+
+    public Genotype getSolution(int i) {
+        return encodedSolutions[i];
     }
 
     public int Size() {
@@ -22,10 +27,10 @@ public class Population {
         return false;
     }
 
-    public Genotype ExtractBest(){
-        Genotype best = encodedSolutions[0];
-        //TODO
-        // Search for best solution
-        return best;
+    @Override
+    public String toString() {
+        return "Population{" +
+                "encodedSolutions=" + Arrays.toString(encodedSolutions) +
+                '}';
     }
 }

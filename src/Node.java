@@ -1,6 +1,4 @@
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class Node {
 
@@ -65,5 +63,18 @@ public class Node {
         }
         // Create a link between the found node and this node.
         new Link(connectedNodes[i], this);
+    }
+
+    public List<Integer> getNodesLinked() {
+        List<Integer> nodesLinked = new ArrayList<>();
+        for (Link l: links)
+        {
+            int otherNodeID = l.getOtherNode(id).getId();
+            // Ignore links to nodes with lower ids as those would already be added to genotype
+            if(otherNodeID > id){
+                nodesLinked.add(otherNodeID - id - 1);
+            }
+        }
+        return nodesLinked;
     }
 }

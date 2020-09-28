@@ -21,12 +21,21 @@ public class Genotype {
     }
 
     /**
+     * Get a bit of the genotype
+     * @param index
+     * @return
+     */
+    public boolean getBit(int index) {
+        return encodedSolution[index];
+    }
+
+    /**
      * Get a subset of the genotype
      * @param startIndex inclusive
      * @param endIndex exclusive
      * @return
      */
-    public Genotype get(int startIndex, int endIndex) {
+    public Genotype getSubset(int startIndex, int endIndex) {
         Genotype subset = new Genotype(endIndex - startIndex);
         int i = 0;
         for(int j = startIndex; j < endIndex; j++){

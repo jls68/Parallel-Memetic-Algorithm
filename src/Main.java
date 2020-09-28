@@ -1,3 +1,4 @@
+import javax.print.DocFlavor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -65,7 +66,7 @@ public class Main {
             Genotype newGeno = GenerateNeighbour(currentGeno);
             newGeno = Repair(newGeno);
             List<Integer> newPheno = Growth(newGeno);
-            if(Evaluate(newPheno) < Evaluate(currentPheno)){
+            if(IsBetterThan(newPheno, currentPheno)){
                 currentGeno = newGeno;
                 currentPheno = newPheno;
             }
@@ -122,7 +123,7 @@ public class Main {
         while(genotypeIndex < solution.length()){
             // Find the range of new links connected to the node at the current nodeIndex
             int range = (numberOfNodes - 1) - nodeIndex;
-            Genotype nodeConnections = solution.get(genotypeIndex, genotypeIndex + range);
+            Genotype nodeConnections = solution.getSubset(genotypeIndex, genotypeIndex + range);
 
             // Check each set link for the current node
             for(int i = 0; i < nodeConnections.length(); i++){
@@ -149,7 +150,6 @@ public class Main {
             genotypeIndex += range;
         }
 
-        //TODO
         // Check that each node has some connection to all other nodes
         boolean infeasibleSolution = true;
         while(infeasibleSolution) {
@@ -175,6 +175,17 @@ public class Main {
             }
         }
 
+        // Update solution
+        solution = new Genotype(solution.length());
+        genotypeIndex = 0;
+        for(nodeIndex = 0; nodeIndex < numberOfNodes; nodeIndex++){
+            List<Integer> links = nodes[nodeIndex].getNodesLinked();
+            for (int l: links) {
+                solution.set(genotypeIndex + l, true);
+            }
+            genotypeIndex += numberOfNodes - (nodeIndex + 1);
+        }
+
         return solution;
     }
 
@@ -192,40 +203,156 @@ public class Main {
     }
 
     /**
-     * Apply recombination and mutation to get new population
+     * Compare two solutions in phenotype space
+     * @param isPhenotype to check if better
+     * @param thanPhenotype to compare against
+     * @return true if the first solution is better
+     */
+    private static Boolean IsBetterThan(List<Integer> isPhenotype, List<Integer> thanPhenotype){
+        return Evaluate(isPhenotype) < Evaluate(thanPhenotype);
+    }
+
+    /**
+     * Apply Recombination that has implicit mutation to get a new population
      * @param pop the current population
      * @return the new population
      */
-    private static Population GenerateNewPopulation(Population pop){
+    private static Population GenerateNewPopulation(Population pop, int numParents, double mutationPercent){
         Population newpop = new Population(pop.Size());
-        //TODO
-        // Recombination that has implicit mutation
+
+        // For each child to be added to the new population
+        for (int childIndex = 0; childIndex < pop.Size(); childIndex++) {
+
+            Genotype[] parents = new Genotype[numParents];
+            // Get random parents
+            for (int i = 0; i < numParents; i++) {
+                parents[i] = pop.getSolution(rand.nextInt(pop.Size()));
+            }
+
+            int i = 0;
+            // Get solution genotype length
+            int genoLength = pop.getSolution(0).length();
+            // Initialise the child solution
+            Genotype newChild = new Genotype(genoLength);
+
+            // Fill the new population, the child, using bits from the parents solution in the current population, pop
+            while(i < genoLength){
+                // Recombination of each parent in turn
+                for(int j = 0; j < numParents && i < genoLength; j++){
+                    newChild.set(i, parents[j].getBit(i));
+                    i++;
+                }
+            }
+
+            // Add mutation at random
+            if(rand.nextDouble() < mutationPercent){
+                newChild = Mutate(newChild);
+            }
+
+            // Repair solution
+            newChild = Repair(newChild);
+
+            // Add child to the new population
+            newpop.Insert(childIndex, newChild);
+        }
+
         return newpop;
     }
 
     /**
      * Mutate solution
      * @param solution
-     * @return
+     * @return a solution with a random bit flipped
      */
-    private static Solution Mutate(Solution solution){
-        int i = rand.Next(solution.length);
+    private static Genotype Mutate(Genotype solution){
+        int i = rand.nextInt(solution.length());
         solution.flip(i);
         return solution;
     }
 
     /**
-     * Select a subset of newpop for the next pop
+     * Select a subset of newpop for the next pop using the plus strategy
      * @param pop the current population
      * @param newpop the new population from recombination, mutation
      * @return a subset for the next population
      */
-    private static Population UpdatePopulation(Population pop, Population newpop){
+    private static Population UpdatePopulationPlus(Population pop, Population newpop){
         Population nextpop = new Population(pop.Size());
-        //TODO
+        List<Integer>[] currPheno = ConvertPopToPhenotype(pop);
+        List<Integer>[] newPheno = ConvertPopToPhenotype(newpop);
         // Select subset of newpop
+        // In the plus strategy, we add pop and newpop together and select the best popsize solutions for the final version of nextpop
+        int currBest = FindBestSolution(currPheno);
+        int newBest = FindBestSolution(newPheno);
+        for(int i = 0; i < nextpop.Size(); i++){
+            // Add the better solution to the next population
+            if(IsBetterThan(currPheno[currBest], newPheno[newBest])){
+                nextpop.Insert(i, pop.getSolution(currBest));
+                // Get the next best solution from the current population
+                currPheno[currBest] = null;
+                currBest = FindBestSolution(currPheno);
+            }
+            else {
+                nextpop.Insert(i, newpop.getSolution(newBest));
+                // Get the next best solution from the new population
+                newPheno[newBest] = null;
+                newBest = FindBestSolution(newPheno);
+            }
+        }
+
         // Combine the subset with pop to get the nextpop
         return nextpop;
+    }
+
+    /**
+     * Select a subset of newpop for the next pop using the comma strategy
+     * this works when the child population is larger than the population size
+     * @param pop the current population
+     * @param newpop the new population from recombination, mutation
+     * @return a subset for the next population
+     */
+    private static Population UpdatePopulationComma(Population pop, Population newpop){
+        Population nextpop = new Population(pop.Size());
+        List<Integer>[] newPheno = ConvertPopToPhenotype(newpop);
+        // Select subset of newpop
+        // we select the best popsize elements from newpop
+        int newBest = FindBestSolution(newPheno);
+        for(int i = 0; i < nextpop.Size(); i++) {
+            // Add the best solutions to the next population
+            nextpop.Insert(i, newpop.getSolution(newBest));
+            // Get the next best solution from the new population
+            newPheno[newBest] = null;
+            newBest = FindBestSolution(newPheno);
+        }
+        return nextpop;
+    }
+
+    /**
+     * Convert Population from genotype space to phenotype space
+     * @param pop
+     * @return array of phenotype solutions
+     */
+    private static List<Integer>[] ConvertPopToPhenotype(Population pop) {
+        List<Integer>[] phenotypes = new List[pop.Size()];
+        for (int i = 0; i < pop.Size(); i++){
+            phenotypes[i] = Growth(pop.getSolution(i));
+        }
+        return phenotypes;
+    }
+
+    /**
+     * Find the best solution
+     * @param phenotypes
+     * @return the index of solution that evaluates to the smallest score
+     */
+    private static int FindBestSolution(List<Integer>[] phenotypes){
+        int best = 0;
+        for (int i = 1; i < phenotypes.length; i++){
+            if(phenotypes[i] != null && (phenotypes[best] == null ||Evaluate(phenotypes[i]) < Evaluate(phenotypes[best]))){
+                best = i;
+            }
+        }
+        return best;
     }
 
     /**
@@ -235,11 +362,14 @@ public class Main {
      */
     private static Population RestartPopulation(Population pop){
         Population newpop = new Population(pop.Size());
+        List<Integer>[] currPheno = ConvertPopToPhenotype(pop);
         // preserve is the percent of the solution to keep when restarting
         int numberPreserved = (int)(pop.Size() * preserve);
         for (int i = 0; i < numberPreserved; i++){
-            Genotype s = pop.ExtractBest();
+            int index = FindBestSolution(currPheno);
+            Genotype s = pop.getSolution(index);
             newpop.Insert(i, s);
+            currPheno[index] = null;
         }
         for(int i = numberPreserved; i < pop.Size(); i++){
             Genotype s = GenerateRandomConfiguration();
@@ -262,7 +392,9 @@ public class Main {
 
         //TODO
         // Read in these parameters
-        int popSize = 2;
+        int popSize = 4;
+        int numParents = 2;
+        double mutatePercent = 0.2;
         numberOfNodes = 4;
         numberOfUniqueLinks = ( numberOfNodes * (numberOfNodes - 1) ) / 2;
         maxConnection = 2;
@@ -277,9 +409,9 @@ public class Main {
         Population pop = GenerateInitialPopulation(popSize);
         do{
             // Apply recombination, mutation
-            Population newpop = GenerateNewPopulation(pop);
+            Population newpop = GenerateNewPopulation(pop, numParents, mutatePercent);
             // Select a subset of newpop for the next pop
-            pop = UpdatePopulation(pop, newpop);
+            pop = UpdatePopulationPlus(pop, newpop);
             // Decide if we need to restart due to stagnation
             if(pop.hasConverged()){
                 pop = RestartPopulation(pop);
@@ -287,6 +419,11 @@ public class Main {
         } while(!TerminationCriterion());
 
         //TODO
-        // Output result\
+        // Output result
+        List<Integer>[] popPheno = ConvertPopToPhenotype(pop);
+        int bestSolution = FindBestSolution(popPheno);
+        System.out.println("Genotype: " + pop.getSolution(bestSolution).toString());
+        System.out.println("Phenotype: " + popPheno[bestSolution].toString());
+        System.out.println("Score: " + Evaluate(popPheno[bestSolution]));
     }
 }
