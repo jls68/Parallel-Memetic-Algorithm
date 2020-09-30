@@ -112,7 +112,7 @@ public class Main {
      */
     private static Genotype GenerateNeighbour(Genotype current){
         int i = rand.nextInt(current.length());
-        Genotype neighbour = (Genotype)current.clone();
+        Genotype neighbour = current.clone();
         neighbour.flip(i);
         return neighbour;
     }
@@ -197,7 +197,7 @@ public class Main {
                 }
             }
             // Check first partition if no node has been found to not be connected
-            for (int i = 0; i < startIndex && infeasibleSolution == false; i++) {
+            for (int i = 0; i < startIndex && !infeasibleSolution; i++) {
                 if (connectedNodes[i] == null) {
                     infeasibleSolution = true;
                     nodes[i].addNewRandomLink(connectedNodes, rand, maxConnection);
@@ -434,6 +434,8 @@ public class Main {
                 // First argument should be the filepath of the lengths to connect each node in a specific csv format
                 String filePath = args[0];
                 linkLengths = readCSV(filePath);
+                numberOfNodes = linkLengths.length;
+                numberOfUniqueLinks = (numberOfNodes * (numberOfNodes - 1)) / 2;
                 // Second argument should be the max number of connections for each node
                 maxConnection = Integer.parseInt(args[1]);
 
@@ -448,7 +450,7 @@ public class Main {
             }
             // If no parameter given then use hard coded test parameters
             else {
-
+                numberOfNodes = 4;
                 numberOfUniqueLinks = (numberOfNodes * (numberOfNodes - 1)) / 2;
                 linkLengths = new int[numberOfUniqueLinks];
                 for (int i = 0; i < numberOfUniqueLinks; i++) {
@@ -463,7 +465,12 @@ public class Main {
                 // Apply recombination, mutation
                 Population newpop = GenerateNewPopulation(pop, numParents, mutatePercent);
                 // Select a subset of newpop for the next pop
-                pop = UpdatePopulationPlus(pop, newpop);
+                if(plusInsteadOfComma) {
+                    pop = UpdatePopulationPlus(pop, newpop);
+                }
+                else {
+                    pop = UpdatePopulationComma(pop, newpop);
+                }
                 // Decide if we need to restart due to stagnation
                 if (pop.hasConverged()) {
                     pop = RestartPopulation(pop, preservePercent);
