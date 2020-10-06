@@ -125,7 +125,7 @@ public class Search extends RecursiveTask<Genotype> {
      */
     private Genotype GenerateNeighbour(Genotype current){
         int i = rand.nextInt(current.length());
-        //Genotype current = current.clone();
+        current = current.clone();
         current.flip(i);
         return current;
     }
