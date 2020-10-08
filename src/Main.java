@@ -2,8 +2,10 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.*;
 
 public class Main {
 
@@ -36,7 +38,14 @@ public class Main {
         return links;
     }
 
-    public static void main(String[] args) {
+    public static Genotype compute(Search search) throws InterruptedException {
+        search.run();
+        //search.join();
+        return search.getResult();
+    }
+
+
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
         // Set default parameters
         int n_pr =  Runtime.getRuntime().availableProcessors();
         int popSize = 4;
@@ -85,47 +94,56 @@ public class Main {
                 maxConnection = 2;
             }
 
-            Genotype bestSolution;
-            List<Integer> solutionPhenotype;
-            int bestScore;
+            Genotype bestSolution = null;
+            List<Integer> solutionPhenotype = null;
+            int bestScore = 0;
 
             // Start Replicated Parallel Search
-            if(replicatedInsteadOfSynchronous){
-
+            if(replicatedInsteadOfSynchronous) {
                 Search[] searches = new Search[n_pr];
                 for (int i = 0; i < n_pr; i++) {
                     searches[i] = new Search(rand, popSize, numParents, numberOfNodes, numberOfUniqueLinks, maxConnection,
-                            linkLengths, mutatePercent, preservePercent, plusInsteadOfComma, tMax);
-
-
-                    //TODO
-                    // Make sure this compute methods happens in parallel
-                    searches[i].run();//start all threads
-
+                            linkLengths, mutatePercent, preservePercent, true, tMax);
                 }
 
-                //call method that finds the best genotype out of threads' list (second for loop)
+                List<Callable<Genotype>> tasks = new ArrayList<Callable<Genotype>>();
+                for (final Search search : searches) {
+                    Callable<Genotype> callable = new Callable<Genotype>() {
+                        @Override
+                        public Genotype call() throws Exception {
+                            return compute(search);
+                        }
+                    };
+                    tasks.add(callable);
+                }
 
-                // Find best solution of all searches //TODO put into a method
-                //join threads (for each one)
-                //wait until all threads have finished execution
-                searches[0].join();
-                bestSolution = searches[0].getResult();
-                solutionPhenotype = Search.Growth(bestSolution);
-                bestScore = Search.Evaluate(solutionPhenotype);
-                for (int i = 1; i < searches.length; i++){
+                ExecutorService exec = Executors.newFixedThreadPool(n_pr);
+                // some other executors you could try to see the different behaviours
+                // ExecutorService exec = Executors.newCachedThreadPool();
+                // ExecutorService exec = Executors.newSingleThreadExecutor();
 
-                    searches[i].join();
-                    Genotype newSolution = searches[i].getResult();
-                    List<Integer> newPheno = Search.Growth(newSolution);
-                    int newScore = Search.Evaluate(newPheno);
+                try {
+                    // Start all searches to run in parallel
+                    List<Future<Genotype>> results = exec.invokeAll(tasks);
+                    // Find best solution of all searches
+                    for (Future<Genotype> search : results) {
 
-                    if(newScore < bestScore){
-                        bestSolution = searches[i].getResult();
-                        solutionPhenotype = newPheno;
-                        bestScore = newScore;
+                        // Wait until all threads have finished execution and get best solution
+                        Genotype newSolution = search.get();
+                        // Convert to phenotype space to then evaluate
+                        List<Integer> newPheno = Search.Growth(newSolution);
+                        int newScore = Search.Evaluate(newPheno);
+                        // Keep track of the solution with the best score
+                        if (bestSolution == null || newScore < bestScore) {
+                            bestSolution = newSolution;
+                            solutionPhenotype = newPheno;
+                            bestScore = newScore;
+                        }
                     }
+                } finally {
+                    exec.shutdown();
                 }
+
             }
             else{
                 Search search = new Search(rand, popSize, numParents, numberOfNodes, numberOfUniqueLinks, maxConnection,
@@ -146,7 +164,7 @@ public class Main {
             System.out.println("Phenotype: " + solutionPhenotype.toString());
             System.out.println("Score: " + bestScore);
 
-        } catch (NumberFormatException | InterruptedException e) {
+        } catch (NumberFormatException | InterruptedException | ExecutionException e) {
             //TODO
             e.printStackTrace();
         }
