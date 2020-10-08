@@ -1,4 +1,5 @@
 import java.util.Arrays;
+import java.util.List;
 
 public class Genotype {
 
@@ -65,6 +66,21 @@ public class Genotype {
         }
         // Return encodedSolution.length if no next set bit
         return i;
+    }
+
+    /**
+     * Finds the ids of the links that make up this solution
+     * @param linkIDs
+     * @return
+     */
+    public String idLinks(String[] linkIDs){
+        String outputMessage = "Links=";
+        for (int i = 0; i < encodedSolution.length; i++){
+            if(encodedSolution[i]){
+                outputMessage += " " + linkIDs[i];
+            }
+        }
+        return outputMessage;
     }
 
     @Override
