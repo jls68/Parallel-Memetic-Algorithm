@@ -5,30 +5,42 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.*;
 
 public class Main {
 
-    /**
-     * Read in the link lengths from the csv file
-     * @param filePath to the csv file
-     * @return an int array of each possible links' length
-     */
-    private static int[] readCSV(String filePath) {
-        int[] links = null;
+    // Global variables to be read in by readCSV method
+    private static int numberOfNodes;
+    private static int numberOfUniqueLinks;
+    private static int[] linkLengths;
+    private static String[] linkIds;
 
+    /**
+     * Read in the information from the csv file
+     * @param filePath to the csv file
+     */
+    private static void readCSV(String filePath) {
         // Parse CSV file into BufferedReader
         try {
             BufferedReader br = new BufferedReader(new FileReader(filePath));
 
             String line = br.readLine();
             String[] split = line.split(",");
-            links = new int[split.length];
-            for (int i = 0; i < split.length; i++) {
-                links[i] = Integer.parseInt(split[i]);
+            numberOfNodes = Integer.parseInt(split[3]);
+            numberOfUniqueLinks = (numberOfNodes * (numberOfNodes - 1)) / 2;
+            linkIds = new String[numberOfUniqueLinks];
+            linkLengths = new int[numberOfUniqueLinks];
+            int i = 0;
+
+            while ("" != (line = br.readLine()) && i < numberOfUniqueLinks){
+                split = line.split(",");
+                linkIds[i] = split[0];
+                linkLengths[i] = Integer.parseInt(split[1]);
+                i++;
             }
+            //TODO
+            // Check that all the link weights have been given
+
         } catch (FileNotFoundException e) {
             //TODO
             e.printStackTrace();
@@ -36,23 +48,27 @@ public class Main {
             //TODO
             e.printStackTrace();
         }
-
-        return links;
     }
 
-    public static void main(String[] args) {
+    public static Genotype compute(Search search) throws InterruptedException {
+        search.run();
+        //search.join();
+        return search.getResult();
+    }
+
+
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
         // Set default parameters
-        int n_pr = 2;
+        int n_pr =  Runtime.getRuntime().availableProcessors();
         int popSize = 4;
         int numParents = 2;
-        int numberOfNodes;
-        int numberOfUniqueLinks;
+        int numChildren = 4; // TODO Allow the number of children to be set
         int maxConnection;
-        int[] linkLengths;
         double preservePercent = 0.2;
         double mutatePercent = 0.2;
         boolean plusInsteadOfComma = true;
         boolean replicatedInsteadOfSynchronous = true;
+        long tMax = 1;
         Random rand = new Random();
 
         try {
@@ -60,9 +76,8 @@ public class Main {
             if (args.length > 1) {
                 // First argument should be the filepath of the lengths to connect each node in a specific csv format
                 String filePath = args[0];
-                linkLengths = readCSV(filePath);
-                numberOfNodes = linkLengths.length;
-                numberOfUniqueLinks = (numberOfNodes * (numberOfNodes - 1)) / 2;
+                readCSV(filePath);
+
                 // Second argument should be the max number of connections for each node
                 maxConnection = Integer.parseInt(args[1]);
 
@@ -88,46 +103,65 @@ public class Main {
                 maxConnection = 2;
             }
 
-            Genotype bestSolution;
-            List<Integer> solutionPhenotype;
-            int bestScore;
+            Genotype bestSolution = null;
+            List<Integer> solutionPhenotype = null;
+            int bestScore = 0;
 
             // Start Replicated Parallel Search
-            if(replicatedInsteadOfSynchronous){
-
-                ForkJoinPool threadPool = new ForkJoinPool(n_pr);
-
-                Genotype[] outputs = new Genotype[n_pr];
+            if(replicatedInsteadOfSynchronous) {
+                Search[] searches = new Search[n_pr];
                 for (int i = 0; i < n_pr; i++) {
-                    Search run = new Search(rand, popSize, numParents, numberOfNodes, numberOfUniqueLinks, maxConnection,
-                            linkLengths, mutatePercent, preservePercent, plusInsteadOfComma);
-                    //TODO
-                    // Make sure this compute methods happens in parallel
-                    outputs[i] = run.compute();
+                    searches[i] = new Search(rand, popSize, numParents, numberOfNodes, numberOfUniqueLinks, maxConnection,
+                            linkLengths, mutatePercent, preservePercent, plusInsteadOfComma, tMax);
                 }
 
-                // Find best solution of all searches
-                bestSolution = outputs[0];
-                solutionPhenotype = Search.Growth(bestSolution);
-                bestScore = Search.Evaluate(solutionPhenotype);
-                for (int i = 1; i < outputs.length; i++){
+                List<Callable<Genotype>> tasks = new ArrayList<Callable<Genotype>>();
+                for (final Search search : searches) {
+                    Callable<Genotype> callable = new Callable<Genotype>() {
+                        @Override
+                        public Genotype call() throws Exception {
+                            return compute(search);
+                        }
+                    };
+                    tasks.add(callable);
+                }
 
-                    List<Integer> newPheno = Search.Growth(outputs[i]);
-                    int newScore = Search.Evaluate(newPheno);
+                ExecutorService exec = Executors.newFixedThreadPool(n_pr);
+                // some other executors we could try to see the different behaviours
+                // ExecutorService exec = Executors.newCachedThreadPool();
+                // ExecutorService exec = Executors.newSingleThreadExecutor();
 
-                    if(newScore < bestScore){
-                        bestSolution = outputs[i];
-                        solutionPhenotype = newPheno;
-                        bestScore = newScore;
+                try {
+                    // Start all searches to run in parallel
+                    List<Future<Genotype>> results = exec.invokeAll(tasks);
+                    // Find best solution of all searches
+                    for (Future<Genotype> search : results) {
+
+                        // Wait until all threads have finished execution and get best solution
+                        Genotype newSolution = search.get();
+                        // Convert to phenotype space to then evaluate
+                        List<Integer> newPheno = Search.Growth(newSolution);
+                        int newScore = Search.Evaluate(newPheno);
+                        // Keep track of the solution with the best score
+                        if (bestSolution == null || newScore < bestScore) {
+                            bestSolution = newSolution;
+                            solutionPhenotype = newPheno;
+                            bestScore = newScore;
+                        }
                     }
+                } finally {
+                    exec.shutdown();
                 }
+
             }
             else{
-                Search run = new Search(rand, popSize, numParents, numberOfNodes, numberOfUniqueLinks, maxConnection,
-                        linkLengths, mutatePercent, preservePercent, plusInsteadOfComma);
-                bestSolution = run.compute();
-                solutionPhenotype = run.Growth(bestSolution);
-                bestScore = run.Evaluate(solutionPhenotype);
+                Search search = new Search(rand, popSize, numParents, numberOfNodes, numberOfUniqueLinks, maxConnection,
+                        linkLengths, mutatePercent, preservePercent, plusInsteadOfComma, tMax);
+                search.run();
+                search.join(0);
+                bestSolution = search.getResult();
+                solutionPhenotype = search.Growth(bestSolution);
+                bestScore = search.Evaluate(solutionPhenotype);
             }
 
 
@@ -139,7 +173,7 @@ public class Main {
             System.out.println("Phenotype: " + solutionPhenotype.toString());
             System.out.println("Score: " + bestScore);
 
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException | InterruptedException | ExecutionException e) {
             //TODO
             e.printStackTrace();
         }

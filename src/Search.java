@@ -3,7 +3,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.RecursiveTask;
 
-public class Search extends RecursiveTask<Genotype> {
+public class Search extends Thread{ //TODO extend runnable
 
     Random rand;
     int popSize;
@@ -15,9 +15,13 @@ public class Search extends RecursiveTask<Genotype> {
     double mutatePercent;
     double preservePercent;
     boolean plusInsteadOfComma;
+    Genotype bestSolution;
+    long tMax;
+    long initialRunTime;
+
 
     Search(Random rand, int popSize, int numParents, int numberOfNodes, int numberOfUniqueLinks, int maxConnection, int[] linkLengths,
-           double mutatePercent, double preservePercent, boolean plusInsteadOfComma){
+           double mutatePercent, double preservePercent, boolean plusInsteadOfComma, long tMax){
         this.rand = rand;
         this.popSize = popSize;
         this.numParents = numParents;
@@ -28,10 +32,16 @@ public class Search extends RecursiveTask<Genotype> {
         this.mutatePercent = mutatePercent;
         this.preservePercent = preservePercent;
         this.plusInsteadOfComma = plusInsteadOfComma;
+        this.tMax = tMax;
     }
 
-    @Override
-    protected Genotype compute() {
+    synchronized List<Genotype> combine (List<Genotype> inputList, Genotype newvalue){
+        inputList.add(newvalue);
+        return inputList;
+    }
+
+    public void run() {
+         initialRunTime = System.nanoTime();
         // Initialise starting population
         Population pop = GenerateInitialPopulation(popSize);
         do {
@@ -52,7 +62,13 @@ public class Search extends RecursiveTask<Genotype> {
         // Find best solution in population
         List<Integer>[] popPheno = ConvertPopToPhenotype(pop);
         int index = FindBestSolution(popPheno);
-        return pop.getSolution(index);
+        // Store best solution
+        bestSolution = pop.getSolution(index);
+
+        //finish timing program
+        long finalTime = System.nanoTime();
+        //Please do not remove or change the format of this output message
+        System.out.println("Thread  " + this.getId() + " finished execution in " + (finalTime - initialRunTime) / 1E9 + " secs.");
     }
 
 
@@ -418,7 +434,13 @@ public class Search extends RecursiveTask<Genotype> {
      * @return true if the termination criteria is met
      */
     private boolean TerminationCriterion(){
-        //TODO
+        final long finalTime = System.nanoTime();
+       if( (finalTime - initialRunTime) / 1E9 > tMax)
         return true;
+       else return false;
+    }
+
+    public Genotype getResult() {
+        return bestSolution;
     }
 }
