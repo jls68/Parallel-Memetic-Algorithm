@@ -84,6 +84,19 @@ public class Genotype {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Genotype genotype = (Genotype) o;
+        return Arrays.equals(encodedSolution, genotype.encodedSolution);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(encodedSolution);
+    }
+
+    @Override
     public String toString() {
         return "Genotype{" +
                 "encodedSolution=" + Arrays.toString(encodedSolution) +

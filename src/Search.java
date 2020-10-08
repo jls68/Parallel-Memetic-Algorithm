@@ -6,6 +6,7 @@ import java.util.concurrent.RecursiveTask;
 public class Search extends Thread{
 
     Random rand;
+    int convergeAmount;
     int popSize;
     int numParents;
     int numChildren;
@@ -25,6 +26,7 @@ public class Search extends Thread{
 
     Search(Random rand, int popSize, int numParents, int numChildren, int numberOfNodes, int numberOfUniqueLinks, int maxConnection, int[] linkLengths,
            double mutatePercent, double preservePercent, boolean plusInsteadOfComma, long tMax, long localtMax, int kMax){
+        convergeAmount = 0;
         this.rand = rand;
         this.popSize = popSize;
         this.numParents = numParents;
@@ -63,6 +65,7 @@ public class Search extends Thread{
             // Decide if we need to restart due to stagnation
             if (pop.hasConverged()) {
                 pop = RestartPopulation(pop, preservePercent);
+                convergeAmount++;
             }
         } while (!TerminationCriterion(tMax));
         // Find best solution in population
@@ -74,7 +77,7 @@ public class Search extends Thread{
         //finish timing program
         long finalTime = System.nanoTime();
         //Please do not remove or change the format of this output message
-        System.out.println("Thread  " + this.getId() + " finished execution in " + (finalTime - initialRunTime) / 1E9 + " secs.");
+        System.out.println("Thread  " + this.getId() + " finished execution in " + (finalTime - initialRunTime) / 1E9 + " secs. Converged " + convergeAmount + " times.");
     }
 
 
@@ -436,7 +439,8 @@ public class Search extends Thread{
 
     /**
      * Check if the algorithm needs to stop
-     * @return true if the termination criteria is met
+     * @param maxTime the max amount of time for the search to go for
+     * @return true if the max time has elapsed or there have been too many convergences
      */
     private boolean TerminationCriterion(long maxTime){
         final long finalTime = System.nanoTime();
