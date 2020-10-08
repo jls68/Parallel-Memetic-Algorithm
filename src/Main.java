@@ -9,24 +9,38 @@ import java.util.concurrent.*;
 
 public class Main {
 
-    /**
-     * Read in the link lengths from the csv file
-     * @param filePath to the csv file
-     * @return an int array of each possible links' length
-     */
-    private static int[] readCSV(String filePath) {
-        int[] links = null;
+    // Global variables to be read in by readCSV method
+    private static int numberOfNodes;
+    private static int numberOfUniqueLinks;
+    private static int[] linkLengths;
+    private static String[] linkIds;
 
+    /**
+     * Read in the information from the csv file
+     * @param filePath to the csv file
+     */
+    private static void readCSV(String filePath) {
         // Parse CSV file into BufferedReader
         try {
             BufferedReader br = new BufferedReader(new FileReader(filePath));
 
             String line = br.readLine();
             String[] split = line.split(",");
-            links = new int[split.length];
-            for (int i = 0; i < split.length; i++) {
-                links[i] = Integer.parseInt(split[i]);
+            numberOfNodes = Integer.parseInt(split[3]);
+            numberOfUniqueLinks = (numberOfNodes * (numberOfNodes - 1)) / 2;
+            linkIds = new String[numberOfUniqueLinks];
+            linkLengths = new int[numberOfUniqueLinks];
+            int i = 0;
+
+            while ("" != (line = br.readLine()) && i < numberOfUniqueLinks){
+                split = line.split(",");
+                linkIds[i] = split[0];
+                linkLengths[i] = Integer.parseInt(split[1]);
+                i++;
             }
+            //TODO
+            // Check that all the link weights have been given
+
         } catch (FileNotFoundException e) {
             //TODO
             e.printStackTrace();
@@ -34,8 +48,6 @@ public class Main {
             //TODO
             e.printStackTrace();
         }
-
-        return links;
     }
 
     public static Genotype compute(Search search) throws InterruptedException {
@@ -50,10 +62,8 @@ public class Main {
         int n_pr =  Runtime.getRuntime().availableProcessors();
         int popSize = 4;
         int numParents = 2;
-        int numberOfNodes;
-        int numberOfUniqueLinks;
+        int numChildren = 4; // TODO Allow the number of children to be set
         int maxConnection;
-        int[] linkLengths;
         double preservePercent = 0.2;
         double mutatePercent = 0.2;
         boolean plusInsteadOfComma = true;
@@ -66,9 +76,8 @@ public class Main {
             if (args.length > 1) {
                 // First argument should be the filepath of the lengths to connect each node in a specific csv format
                 String filePath = args[0];
-                linkLengths = readCSV(filePath);
-                numberOfNodes = linkLengths.length;
-                numberOfUniqueLinks = (numberOfNodes * (numberOfNodes - 1)) / 2;
+                readCSV(filePath);
+
                 // Second argument should be the max number of connections for each node
                 maxConnection = Integer.parseInt(args[1]);
 
@@ -103,7 +112,7 @@ public class Main {
                 Search[] searches = new Search[n_pr];
                 for (int i = 0; i < n_pr; i++) {
                     searches[i] = new Search(rand, popSize, numParents, numberOfNodes, numberOfUniqueLinks, maxConnection,
-                            linkLengths, mutatePercent, preservePercent, true, tMax);
+                            linkLengths, mutatePercent, preservePercent, plusInsteadOfComma, tMax);
                 }
 
                 List<Callable<Genotype>> tasks = new ArrayList<Callable<Genotype>>();
@@ -118,7 +127,7 @@ public class Main {
                 }
 
                 ExecutorService exec = Executors.newFixedThreadPool(n_pr);
-                // some other executors you could try to see the different behaviours
+                // some other executors we could try to see the different behaviours
                 // ExecutorService exec = Executors.newCachedThreadPool();
                 // ExecutorService exec = Executors.newSingleThreadExecutor();
 
