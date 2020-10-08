@@ -2,12 +2,8 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 
 public class Main {
 
@@ -53,6 +49,7 @@ public class Main {
         double mutatePercent = 0.2;
         boolean plusInsteadOfComma = true;
         boolean replicatedInsteadOfSynchronous = true;
+        long tMax = 1;
         Random rand = new Random();
 
         try {
@@ -98,7 +95,7 @@ public class Main {
                 Search[] searches = new Search[n_pr];
                 for (int i = 0; i < n_pr; i++) {
                     searches[i] = new Search(rand, popSize, numParents, numberOfNodes, numberOfUniqueLinks, maxConnection,
-                            linkLengths, mutatePercent, preservePercent, plusInsteadOfComma);
+                            linkLengths, mutatePercent, preservePercent, plusInsteadOfComma, tMax);
 
 
                     //TODO
@@ -132,7 +129,7 @@ public class Main {
             }
             else{
                 Search search = new Search(rand, popSize, numParents, numberOfNodes, numberOfUniqueLinks, maxConnection,
-                        linkLengths, mutatePercent, preservePercent, plusInsteadOfComma);
+                        linkLengths, mutatePercent, preservePercent, plusInsteadOfComma, tMax);
                 search.run();
                 search.join(0);
                 bestSolution = search.getResult();

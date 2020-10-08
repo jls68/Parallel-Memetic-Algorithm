@@ -16,10 +16,12 @@ public class Search extends Thread{ //TODO extend runnable
     double preservePercent;
     boolean plusInsteadOfComma;
     Genotype bestSolution;
+    long tMax;
+    long initialRunTime;
 
 
     Search(Random rand, int popSize, int numParents, int numberOfNodes, int numberOfUniqueLinks, int maxConnection, int[] linkLengths,
-           double mutatePercent, double preservePercent, boolean plusInsteadOfComma){
+           double mutatePercent, double preservePercent, boolean plusInsteadOfComma, long tMax){
         this.rand = rand;
         this.popSize = popSize;
         this.numParents = numParents;
@@ -30,6 +32,7 @@ public class Search extends Thread{ //TODO extend runnable
         this.mutatePercent = mutatePercent;
         this.preservePercent = preservePercent;
         this.plusInsteadOfComma = plusInsteadOfComma;
+        this.tMax = tMax;
     }
 
     synchronized List<Genotype> combine (List<Genotype> inputList, Genotype newvalue){
@@ -38,7 +41,7 @@ public class Search extends Thread{ //TODO extend runnable
     }
 
     public void run() {
-        final long initialRunTime = System.nanoTime();
+         initialRunTime = System.nanoTime();
         // Initialise starting population
         Population pop = GenerateInitialPopulation(popSize);
         do {
@@ -431,8 +434,10 @@ public class Search extends Thread{ //TODO extend runnable
      * @return true if the termination criteria is met
      */
     private boolean TerminationCriterion(){
-        //TODO
+        final long finalTime = System.nanoTime();
+       if( (finalTime - initialRunTime) / 1E9 > tMax)
         return true;
+       else return false;
     }
 
     public Genotype getResult() {
