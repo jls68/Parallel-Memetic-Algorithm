@@ -42,7 +42,7 @@ public class Main {
 
     public static void main(String[] args) {
         // Set default parameters
-        int n_pr = 2;
+        int n_pr =  Runtime.getRuntime().availableProcessors();
         int popSize = 4;
         int numParents = 2;
         int numberOfNodes;
@@ -95,39 +95,49 @@ public class Main {
             // Start Replicated Parallel Search
             if(replicatedInsteadOfSynchronous){
 
-                ForkJoinPool threadPool = new ForkJoinPool(n_pr);
-
-                Genotype[] outputs = new Genotype[n_pr];
+                Search[] searches = new Search[n_pr];
                 for (int i = 0; i < n_pr; i++) {
-                    Search run = new Search(rand, popSize, numParents, numberOfNodes, numberOfUniqueLinks, maxConnection,
+                    searches[i] = new Search(rand, popSize, numParents, numberOfNodes, numberOfUniqueLinks, maxConnection,
                             linkLengths, mutatePercent, preservePercent, plusInsteadOfComma);
+
+
                     //TODO
                     // Make sure this compute methods happens in parallel
-                    outputs[i] = run.compute();
+                    searches[i].run();//start all threads
+
                 }
 
-                // Find best solution of all searches
-                bestSolution = outputs[0];
+                //call method that finds the best genotype out of threads' list (second for loop)
+
+                // Find best solution of all searches //TODO put into a method
+                //join threads (for each one)
+                //wait until all threads have finished execution
+                searches[0].join();
+                bestSolution = searches[0].getResult();
                 solutionPhenotype = Search.Growth(bestSolution);
                 bestScore = Search.Evaluate(solutionPhenotype);
-                for (int i = 1; i < outputs.length; i++){
+                for (int i = 1; i < searches.length; i++){
 
-                    List<Integer> newPheno = Search.Growth(outputs[i]);
+                    searches[i].join();
+                    Genotype newSolution = searches[i].getResult();
+                    List<Integer> newPheno = Search.Growth(newSolution);
                     int newScore = Search.Evaluate(newPheno);
 
                     if(newScore < bestScore){
-                        bestSolution = outputs[i];
+                        bestSolution = searches[i].getResult();
                         solutionPhenotype = newPheno;
                         bestScore = newScore;
                     }
                 }
             }
             else{
-                Search run = new Search(rand, popSize, numParents, numberOfNodes, numberOfUniqueLinks, maxConnection,
+                Search search = new Search(rand, popSize, numParents, numberOfNodes, numberOfUniqueLinks, maxConnection,
                         linkLengths, mutatePercent, preservePercent, plusInsteadOfComma);
-                bestSolution = run.compute();
-                solutionPhenotype = run.Growth(bestSolution);
-                bestScore = run.Evaluate(solutionPhenotype);
+                search.run();
+                search.join(0);
+                bestSolution = search.getResult();
+                solutionPhenotype = search.Growth(bestSolution);
+                bestScore = search.Evaluate(solutionPhenotype);
             }
 
 
@@ -139,7 +149,7 @@ public class Main {
             System.out.println("Phenotype: " + solutionPhenotype.toString());
             System.out.println("Score: " + bestScore);
 
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException | InterruptedException e) {
             //TODO
             e.printStackTrace();
         }
