@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.*;
 
 public class Main {
 
@@ -20,7 +21,7 @@ public class Main {
      * @param filePath to the csv file
      * @return an int array of each possible links' length
      */
-    private static int[] readCSV(String filePath) {
+    private static int[] readCSV(String filePath) { //currently does not process "broken connections" in graph of possible connections
         int[] links = null;
 
         // Parse CSV file into BufferedReader
@@ -28,10 +29,10 @@ public class Main {
             BufferedReader br = new BufferedReader(new FileReader(filePath));
 
             String line = br.readLine();
-            String[] split = line.split(",");
+            String[] split = line.split(",");//read in a row
             links = new int[split.length];
             for (int i = 0; i < split.length; i++) {
-                links[i] = Integer.parseInt(split[i]);
+                links[i] = Integer.parseInt(split[i]); //input each edge with weight from graph
             }
         } catch (FileNotFoundException e) {
             //TODO
@@ -94,7 +95,7 @@ public class Main {
     private static Genotype LocalSearch(Genotype currentGeno){
         List<Integer> currentPheno = Growth(currentGeno);
         do{
-            Genotype newGeno = GenerateNeighbour(currentGeno);
+            Genotype newGeno = Mutate(currentGeno);
             newGeno = Repair(newGeno);
             List<Integer> newPheno = Growth(newGeno);
             if(IsBetterThan(newPheno, currentPheno)){
@@ -105,16 +106,15 @@ public class Main {
         return currentGeno;
     }
 
-    /**
-     * Generate a random solution in the neighbourhood of the given solution
-     * @param current solution in genotype space
-     * @return a neighbour solution in genotype space
-     */
-    private static Genotype GenerateNeighbour(Genotype current){
-        int i = rand.nextInt(current.length());
-        Genotype neighbour = current.clone();
-        neighbour.flip(i);
-        return neighbour;
+    private static Genotype ParallelVNS(Genotype currentGenotype){
+        int cores = Runtime.getRuntime().availableProcessors();
+        System.out.println("Number of available processors is " + cores);
+
+
+        //generate new genotype
+
+        //
+        return null;
     }
 
     /**
@@ -291,7 +291,7 @@ public class Main {
     }
 
     /**
-     * Mutate solution
+     * Mutate solution : same as shake
      * @param solution
      * @return a solution with a random bit flipped
      */
