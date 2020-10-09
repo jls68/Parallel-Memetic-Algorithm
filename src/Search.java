@@ -333,8 +333,8 @@ public class Search extends Thread{
             }
         }
         // Add the remainder parent to the new population
-        while (childIndex < numberOfUniqueLinks){
-            for(int i = 0; i < indexes.size() && childIndex < numberOfUniqueLinks; i++){
+        while (childIndex < newpop.Size()){
+            for(int i = 0; i < indexes.size() && childIndex < newpop.Size(); i++){
                 newpop.Insert(childIndex, pop.getSolution(indexes.get(i)).clone());
                 childIndex++;
             }

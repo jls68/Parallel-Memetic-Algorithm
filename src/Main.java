@@ -61,7 +61,7 @@ public class Main {
     public static void main(String[] args) throws InterruptedException, ExecutionException {
         // Set default parameters
         int n_pr =  Runtime.getRuntime().availableProcessors();
-        int popSize = 4;
+        int popSize = 8;
         int numParents = 2;
         int numChildren = 4; // TODO Allow the number of children to be set
         int maxConnection;
@@ -87,28 +87,33 @@ public class Main {
                 if (args.length > 2) {
                     for (int i = 2; i < args.length; i++) {
                         // Optional -S argument followed by an integer is the number for the random seed
-                        if(args[i].equals("-S")){
+                        if (args[i].equals("-S")) {
                             int seed = Integer.parseInt(args[i + 1]);
                             rand = new Random(seed);
                             i++;
                         }
-                    //TODO
-                    // Optional -Pop argument followed by an integer is the population size
-                    // Optional -parents argument followed by an integer is the number of parents
-                    // Optional -preserve argument followed by a double is the preserve Percent
-                    // Optional -mutate argument followed by a double is the mutatePercent
-                    // Optional argument of a plus or comma keyword to select the recombination method
-                    // Optional argument of -replicated or -synchronous to select the parallelism method and
-                    //  followed by an integer to choose the number cores to use
-                    // Optional argument of -kMax followed by a long is the max time to search
+                        // Optional -Pop argument followed by an integer is the population size
+                        else if (args[i].equals("-Pop")) {
+                            popSize = Integer.parseInt(args[i + 1]);
+                            i++;
+                        }
 
-                    // Optional argument of -tMax followed by a long is the max time to search
-                    else if(args[i].equals("-tMax")){
-                        tMax = Integer.parseInt(args[i + 1]);
-                        i++;
-                    }
-                    //TODO
-                    // Optional argument of -localtMax followed by a long is the max time to do local search
+                        //TODO
+                        // Optional -parents argument followed by an integer is the number of parents
+                        // Optional -preserve argument followed by a double is the preserve Percent
+                        // Optional -mutate argument followed by a double is the mutatePercent
+                        // Optional argument of a plus or comma keyword to select the recombination method
+                        // Optional argument of -replicated or -synchronous to select the parallelism method and
+                        //  followed by an integer to choose the number cores to use
+                        // Optional argument of -kMax followed by a long is the max time to search
+
+                        // Optional argument of -tMax followed by a long is the max time to search
+                        else if (args[i].equals("-tMax")) {
+                            tMax = Integer.parseInt(args[i + 1]);
+                            i++;
+                        }
+                        //TODO
+                        // Optional argument of -localtMax followed by a long is the max time to do local search
                     }
                 }
                 // Start the timer to record how long it takes to search for the best solution.
