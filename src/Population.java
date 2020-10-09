@@ -22,9 +22,12 @@ public class Population {
     }
 
     public boolean hasConverged(){
-        //TODO
-        // Check for convergence
-        return false;
+        for (int i = 0; i < encodedSolutions.length - 1; i++) {
+            if(!encodedSolutions[i].equals(encodedSolutions[i + 1])){
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

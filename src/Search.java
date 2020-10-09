@@ -3,28 +3,34 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.RecursiveTask;
 
-public class Search extends Thread{ //TODO extend runnable
+public class Search extends Thread{
 
     Random rand;
+    int convergeAmount;
     int popSize;
     int numParents;
+    int numChildren;
     int numberOfNodes;
     int numberOfUniqueLinks;
     int maxConnection;
+    int kMax;
     static int[] linkLengths;
     double mutatePercent;
     double preservePercent;
     boolean plusInsteadOfComma;
     Genotype bestSolution;
     long tMax;
+    long localtMax;
     long initialRunTime;
 
 
-    Search(Random rand, int popSize, int numParents, int numberOfNodes, int numberOfUniqueLinks, int maxConnection, int[] linkLengths,
-           double mutatePercent, double preservePercent, boolean plusInsteadOfComma, long tMax){
+    Search(Random rand, int popSize, int numParents, int numChildren, int numberOfNodes, int numberOfUniqueLinks, int maxConnection, int[] linkLengths,
+           double mutatePercent, double preservePercent, boolean plusInsteadOfComma, long tMax, long localtMax, int kMax){
+        convergeAmount = 0;
         this.rand = rand;
         this.popSize = popSize;
         this.numParents = numParents;
+        this.numChildren = numChildren;
         this.numberOfNodes = numberOfNodes;
         this.numberOfUniqueLinks = numberOfUniqueLinks;
         this.maxConnection = maxConnection;
@@ -33,6 +39,8 @@ public class Search extends Thread{ //TODO extend runnable
         this.preservePercent = preservePercent;
         this.plusInsteadOfComma = plusInsteadOfComma;
         this.tMax = tMax;
+        this.localtMax = localtMax;
+        this.kMax = kMax;
     }
 
     synchronized List<Genotype> combine (List<Genotype> inputList, Genotype newvalue){
@@ -57,8 +65,9 @@ public class Search extends Thread{ //TODO extend runnable
             // Decide if we need to restart due to stagnation
             if (pop.hasConverged()) {
                 pop = RestartPopulation(pop, preservePercent);
+                convergeAmount++;
             }
-        } while (!TerminationCriterion());
+        } while (!TerminationCriterion(tMax));
         // Find best solution in population
         List<Integer>[] popPheno = ConvertPopToPhenotype(pop);
         int index = FindBestSolution(popPheno);
@@ -68,7 +77,7 @@ public class Search extends Thread{ //TODO extend runnable
         //finish timing program
         long finalTime = System.nanoTime();
         //Please do not remove or change the format of this output message
-        System.out.println("Thread  " + this.getId() + " finished execution in " + (finalTime - initialRunTime) / 1E9 + " secs.");
+        System.out.println("Thread  " + this.getId() + " finished execution in " + (finalTime - initialRunTime) / 1E9 + " secs. Converged " + convergeAmount + " times.");
     }
 
 
@@ -130,7 +139,7 @@ public class Search extends Thread{ //TODO extend runnable
                 currentGeno = newGeno;
                 currentPheno = newPheno;
             }
-        } while(!TerminationCriterion());
+        } while(!TerminationCriterion(localtMax));
         return currentGeno;
     }
 
@@ -245,7 +254,6 @@ public class Search extends Thread{ //TODO extend runnable
             }
             genotypeIndex += numberOfNodes - (nodeIndex + 1);
         }
-
         return solution;
     }
 
@@ -431,11 +439,12 @@ public class Search extends Thread{ //TODO extend runnable
 
     /**
      * Check if the algorithm needs to stop
-     * @return true if the termination criteria is met
+     * @param maxTime the max amount of time for the search to go for
+     * @return true if the max time has elapsed or there have been too many convergences
      */
-    private boolean TerminationCriterion(){
+    private boolean TerminationCriterion(long maxTime){
         final long finalTime = System.nanoTime();
-       if( (finalTime - initialRunTime) / 1E9 > tMax)
+       if( (finalTime - initialRunTime) / 1E9 > maxTime)
         return true;
        else return false;
     }
