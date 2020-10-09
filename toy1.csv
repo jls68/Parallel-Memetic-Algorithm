@@ -1,4 +1,4 @@
-﻿Link (Must be in alphabetical order without gaps),Weight of link,Number of nodes,4,,,,,
+﻿,4,,,,,,,
 A-B,1,,,Node,A,B,C,D
 A-C,2,,,A,0,1,2,6
 A-D,6,,,B,1,0,5,1

@@ -26,7 +26,7 @@ public class Main {
 
             String line = br.readLine();
             String[] split = line.split(",");
-            numberOfNodes = Integer.parseInt(split[3]);
+            numberOfNodes = Integer.parseInt(split[1]);
             numberOfUniqueLinks = (numberOfNodes * (numberOfNodes - 1)) / 2;
             linkIDs = new String[numberOfUniqueLinks];
             linkLengths = new int[numberOfUniqueLinks];
@@ -35,6 +35,8 @@ public class Main {
             while ("" != (line = br.readLine()) && i < numberOfUniqueLinks){
                 split = line.split(",");
                 linkIDs[i] = split[0];
+                //TODO
+                // Check fro missing weights
                 linkLengths[i] = Integer.parseInt(split[1]);
                 i++;
             }

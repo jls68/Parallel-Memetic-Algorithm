@@ -54,7 +54,7 @@ public class Search extends Thread{
         Population pop = GenerateInitialPopulation(popSize);
         do {
             // Apply recombination, mutation
-            Population newpop = GenerateNewPopulation(pop, numParents, mutatePercent);
+            Population newpop = GenerateNewPopulation(pop, numParents, numChildren, mutatePercent);
             // Select a subset of newpop for the next pop
             if(plusInsteadOfComma) {
                 pop = UpdatePopulationPlus(pop, newpop);
@@ -285,43 +285,59 @@ public class Search extends Thread{
      * @param pop the current population
      * @return the new population
      */
-    private Population GenerateNewPopulation(Population pop, int numParents, double mutationPercent){
-        Population newpop = new Population(pop.Size());
+    private Population GenerateNewPopulation(Population pop, int numParents, int numChildren, double mutationPercent) {
+        Population newpop = new Population(popSize * (numChildren / numParents));
 
-        // For each child to be added to the new population
-        for (int childIndex = 0; childIndex < pop.Size(); childIndex++) {
+        // Integer list of indexes of solutions in the pop that have not been selected as parents yet
+        List<Integer> indexes = new ArrayList<>();
+        for (int i = 0; i < popSize; i++) {
+            indexes.add(i);
+        }
 
+        int childIndex = 0;
+
+        // Group all in solutions in the current population to form the groups of parents
+        while (numParents <= indexes.size()) {
+
+            // Grab a group of parent solutions
             Genotype[] parents = new Genotype[numParents];
-            // Get random parents
-            for (int i = 0; i < numParents; i++) {
-                parents[i] = pop.getSolution(rand.nextInt(pop.Size()));
+            for (int p = 0; p < numParents; p++) {
+                int parentIndex = rand.nextInt(indexes.size());
+                parents[p] = pop.getSolution(indexes.get(parentIndex));
+                indexes.remove(parentIndex);
             }
 
-            int i = 0;
-            // Get solution genotype length
-            int genoLength = pop.getSolution(0).length();
-            // Initialise the child solution
-            Genotype newChild = new Genotype(genoLength);
+            // Recombine the parents to get the children solutions
+            for (int c = 0; c < numChildren; c++) {
 
-            // Fill the new population, the child, using bits from the parents solution in the current population, pop
-            while(i < genoLength){
-                // Recombination of each parent in turn
-                for(int j = 0; j < numParents && i < genoLength; j++){
-                    newChild.set(i, parents[j].getBit(i));
-                    i++;
+                // Initialise the child solution
+                Genotype newChild = new Genotype(numberOfUniqueLinks);
+
+                // Fill the child using bits from the parents solution in the current population, pop
+                // Inherit each bit from a random parent
+                for (int b = 0; b < numberOfUniqueLinks; b++) {
+                    newChild.set(b, parents[rand.nextInt(numParents)].getBit(b));
                 }
+
+                // Add mutation at random
+                if (rand.nextDouble() < mutationPercent) {
+                    newChild = GenerateNeighbour(newChild);
+                }
+
+                // Repair solution
+                newChild = Repair(newChild);
+
+                // Add child to the new population
+                newpop.Insert(childIndex, newChild);
+                childIndex++;
             }
-
-            // Add mutation at random
-            if(rand.nextDouble() < mutationPercent){
-                newChild = GenerateNeighbour(newChild);
+        }
+        // Add the remainder parent to the new population
+        while (childIndex < numberOfUniqueLinks){
+            for(int i = 0; i < indexes.size() && childIndex < numberOfUniqueLinks; i++){
+                newpop.Insert(childIndex, pop.getSolution(indexes.get(i)).clone());
+                childIndex++;
             }
-
-            // Repair solution
-            newChild = Repair(newChild);
-
-            // Add child to the new population
-            newpop.Insert(childIndex, newChild);
         }
 
         return newpop;
@@ -334,14 +350,14 @@ public class Search extends Thread{
      * @return a subset for the next population
      */
     private Population UpdatePopulationPlus(Population pop, Population newpop){
-        Population nextpop = new Population(pop.Size());
+        Population nextpop = new Population(popSize);
         List<Integer>[] currPheno = ConvertPopToPhenotype(pop);
         List<Integer>[] newPheno = ConvertPopToPhenotype(newpop);
         // Select subset of newpop
         // In the plus strategy, we add pop and newpop together and select the best popsize solutions for the final version of nextpop
         int currBest = FindBestSolution(currPheno);
         int newBest = FindBestSolution(newPheno);
-        for(int i = 0; i < nextpop.Size(); i++){
+        for(int i = 0; i < popSize; i++){
             // Add the better solution to the next population
             if(IsBetterThan(currPheno[currBest], newPheno[newBest])){
                 nextpop.Insert(i, pop.getSolution(currBest));
@@ -369,12 +385,12 @@ public class Search extends Thread{
      * @return a subset for the next population
      */
     private Population UpdatePopulationComma(Population pop, Population newpop){
-        Population nextpop = new Population(pop.Size());
+        Population nextpop = new Population(popSize);
         List<Integer>[] newPheno = ConvertPopToPhenotype(newpop);
         // Select subset of newpop
         // we select the best popsize elements from newpop
         int newBest = FindBestSolution(newPheno);
-        for(int i = 0; i < nextpop.Size(); i++) {
+        for(int i = 0; i < popSize; i++) {
             // Add the best solutions to the next population
             nextpop.Insert(i, newpop.getSolution(newBest));
             // Get the next best solution from the new population
@@ -390,8 +406,8 @@ public class Search extends Thread{
      * @return array of phenotype solutions
      */
     private List<Integer>[] ConvertPopToPhenotype(Population pop) {
-        List<Integer>[] phenotypes = new List[pop.Size()];
-        for (int i = 0; i < pop.Size(); i++){
+        List<Integer>[] phenotypes = new List[popSize];
+        for (int i = 0; i < popSize; i++){
             phenotypes[i] = Growth(pop.getSolution(i));
         }
         return phenotypes;
@@ -419,17 +435,17 @@ public class Search extends Thread{
      * @return a new population
      */
     private Population RestartPopulation(Population pop, double preserve){
-        Population newpop = new Population(pop.Size());
+        Population newpop = new Population(popSize);
         List<Integer>[] currPheno = ConvertPopToPhenotype(pop);
         // preserve is the percent of the solution to keep when restarting
-        int numberPreserved = (int)(pop.Size() * preserve);
+        int numberPreserved = (int)(popSize * preserve);
         for (int i = 0; i < numberPreserved; i++){
             int index = FindBestSolution(currPheno);
             Genotype s = pop.getSolution(index);
             newpop.Insert(i, s);
             currPheno[index] = null;
         }
-        for(int i = numberPreserved; i < pop.Size(); i++){
+        for(int i = numberPreserved; i < popSize; i++){
             Genotype s = GenerateRandomConfiguration();
             s = LocalSearch(s);
             newpop.Insert(i, s);
