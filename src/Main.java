@@ -67,6 +67,7 @@ public class Main {
         int maxConnection;
         double preservePercent = 0.2;
         double mutatePercent = 0.2;
+        boolean randomInheritance = true;
         boolean plusInsteadOfComma = true;
         boolean replicatedInsteadOfSynchronous = true;
         long tMax = 1;
@@ -128,7 +129,7 @@ public class Main {
                     Search[] searches = new Search[n_pr];
                     for (int i = 0; i < n_pr; i++) {
                         searches[i] = new Search(rand, popSize, numParents, numChildren, numberOfNodes, numberOfUniqueLinks, maxConnection,
-                                linkLengths, mutatePercent, preservePercent, plusInsteadOfComma, tMax, localtMax, kMax);
+                                linkLengths, mutatePercent, preservePercent, randomInheritance, plusInsteadOfComma, tMax, localtMax, kMax);
                     }
 
                     List<Callable<Genotype>> tasks = new ArrayList<Callable<Genotype>>();
@@ -171,7 +172,7 @@ public class Main {
 
                 } else {
                     Search search = new Search(rand, popSize, numParents, numChildren, numberOfNodes, numberOfUniqueLinks, maxConnection,
-                            linkLengths, mutatePercent, preservePercent, plusInsteadOfComma, tMax, localtMax, kMax);
+                            linkLengths, mutatePercent, preservePercent, randomInheritance, plusInsteadOfComma, tMax, localtMax, kMax);
                     search.run();
                     search.join(0);
                     bestSolution = search.getResult();

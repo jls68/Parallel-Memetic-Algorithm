@@ -50,6 +50,12 @@ public class Genotype {
         encodedSolution[index] = value;
     }
 
+    public void set(int startIndex, Genotype subset){
+        for(int i = 0; i < subset.length() && startIndex + 1 < encodedSolution.length; i++) {
+            encodedSolution[startIndex + 1] = subset.getBit(i);
+        }
+    }
+
     public Genotype clone(){
         Genotype clone = new Genotype(encodedSolution.length);
         for(int i = 0; i < encodedSolution.length; i++){

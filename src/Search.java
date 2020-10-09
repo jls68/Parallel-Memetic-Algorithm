@@ -17,6 +17,7 @@ public class Search extends Thread{
     static int[] linkLengths;
     double mutatePercent;
     double preservePercent;
+    boolean randomInheritance;
     boolean plusInsteadOfComma;
     Genotype bestSolution;
     long tMax;
@@ -25,7 +26,7 @@ public class Search extends Thread{
 
 
     Search(Random rand, int popSize, int numParents, int numChildren, int numberOfNodes, int numberOfUniqueLinks, int maxConnection, int[] linkLengths,
-           double mutatePercent, double preservePercent, boolean plusInsteadOfComma, long tMax, long localtMax, int kMax){
+           double mutatePercent, double preservePercent, boolean randomInheritance, boolean plusInsteadOfComma, long tMax, long localtMax, int kMax){
         convergeAmount = 0;
         this.rand = rand;
         this.popSize = popSize;
@@ -37,6 +38,7 @@ public class Search extends Thread{
         this.linkLengths = linkLengths;
         this.mutatePercent = mutatePercent;
         this.preservePercent = preservePercent;
+        this.randomInheritance = randomInheritance;
         this.plusInsteadOfComma = plusInsteadOfComma;
         this.tMax = tMax;
         this.localtMax = localtMax;
@@ -54,7 +56,7 @@ public class Search extends Thread{
         Population pop = GenerateInitialPopulation(popSize);
         do {
             // Apply recombination, mutation
-            Population newpop = GenerateNewPopulation(pop, numParents, numChildren, mutatePercent);
+            Population newpop = GenerateNewPopulation(pop, numParents, numChildren, mutatePercent, randomInheritance);
             // Select a subset of newpop for the next pop
             if(plusInsteadOfComma) {
                 pop = UpdatePopulationPlus(pop, newpop);
@@ -285,7 +287,7 @@ public class Search extends Thread{
      * @param pop the current population
      * @return the new population
      */
-    private Population GenerateNewPopulation(Population pop, int numParents, int numChildren, double mutationPercent) {
+    private Population GenerateNewPopulation(Population pop, int numParents, int numChildren, double mutationPercent, boolean randomInheritance) {
         Population newpop = new Population(popSize * (numChildren / numParents));
 
         // Integer list of indexes of solutions in the pop that have not been selected as parents yet
@@ -314,9 +316,20 @@ public class Search extends Thread{
                 Genotype newChild = new Genotype(numberOfUniqueLinks);
 
                 // Fill the child using bits from the parents solution in the current population, pop
-                // Inherit each bit from a random parent
-                for (int b = 0; b < numberOfUniqueLinks; b++) {
-                    newChild.set(b, parents[rand.nextInt(numParents)].getBit(b));
+                if(randomInheritance) {
+                    // Inherit each bit from a random parent
+                    for (int b = 0; b < numberOfUniqueLinks; b++) {
+                        newChild.set(b, parents[rand.nextInt(numParents)].getBit(b));
+                    }
+                }
+                // Else take a section of bits from each parent
+                else{
+                    int cloneSize = numberOfUniqueLinks / numParents;
+                    int startIndex = cloneSize;
+                    for (int p = 0; p < numParents; p++){
+                        Genotype section = parents[p].getSubset(startIndex, startIndex + cloneSize);
+                        newChild.set(startIndex, section);
+                    }
                 }
 
                 // Add mutation at random
