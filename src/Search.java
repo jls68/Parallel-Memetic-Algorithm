@@ -17,7 +17,7 @@ public class Search extends Thread{
     static int[] linkLengths;
     double mutatePercent;
     double preservePercent;
-    boolean randomInheritance;
+    boolean sectionInheritance;
     boolean plusInsteadOfComma;
     Genotype bestSolution;
     long tMax;
@@ -26,7 +26,7 @@ public class Search extends Thread{
 
 
     Search(Random rand, int popSize, int numParents, int numChildren, int numberOfNodes, int numberOfUniqueLinks, int maxConnection, int[] linkLengths,
-           double mutatePercent, double preservePercent, boolean randomInheritance, boolean plusInsteadOfComma, long tMax, long localtMax, int kMax){
+           double mutatePercent, double preservePercent, boolean sectionInheritance, boolean plusInsteadOfComma, long tMax, long localtMax, int kMax){
         convergeAmount = 0;
         this.rand = rand;
         this.popSize = popSize;
@@ -38,7 +38,7 @@ public class Search extends Thread{
         this.linkLengths = linkLengths;
         this.mutatePercent = mutatePercent;
         this.preservePercent = preservePercent;
-        this.randomInheritance = randomInheritance;
+        this.sectionInheritance = sectionInheritance;
         this.plusInsteadOfComma = plusInsteadOfComma;
         this.tMax = tMax;
         this.localtMax = localtMax;
@@ -56,7 +56,7 @@ public class Search extends Thread{
         Population pop = GenerateInitialPopulation(popSize);
         do {
             // Apply recombination, mutation
-            Population newpop = GenerateNewPopulation(pop, numParents, numChildren, mutatePercent, randomInheritance);
+            Population newpop = GenerateNewPopulation(pop, numParents, numChildren, mutatePercent, sectionInheritance);
             // Select a subset of newpop for the next pop
             if(plusInsteadOfComma) {
                 pop = UpdatePopulationPlus(pop, newpop);
@@ -191,31 +191,28 @@ public class Search extends Thread{
         int genotypeIndex = 0;
 
         // Look through each link making up the nodes
-        while(genotypeIndex < solution.length()){
+        while(nodeIndex < numberOfNodes){
             // Find the range of new links connected to the node at the current nodeIndex
             int range = (numberOfNodes - 1) - nodeIndex;
-            Genotype nodeConnections = solution.getSubset(genotypeIndex, genotypeIndex + range);
 
             // Check each set link for the current node
-            for(int i = 0; i < nodeConnections.length(); i++){
-                // Set i to the index of the next set bit
-                i = nodeConnections.nextSetBit(i);
-                // if a set bit was found
-                if(i < nodeConnections.length()){
-                    // Record the link between the two nodes
-                    new Link(nodes[nodeIndex], nodes[nodeIndex + 1 + i]);
+            for(int i = solution.nextSetBit(genotypeIndex); i < genotypeIndex + range; i = solution.nextSetBit(i + 1)) {
+                // Set bit was found
+                Node thisNode = nodes[nodeIndex];
+                Node otherNode = nodes[nodeIndex + 1 + i - genotypeIndex];
 
-                    // If either nodes has too many connections then remove a random connection from that node
-                    if (nodes[nodeIndex].exceedLimit(maxConnection)) {
-                        nodes[nodeIndex].removeRandomLink(rand);
-                    }
-                    // Check the other node in case it still has too many connections
-                    if (nodes[nodeIndex + 1 + i].exceedLimit(maxConnection)){
-                        nodes[nodeIndex + 1 + i].removeRandomLink(rand);
-                    }
+                // Record the link between the two nodes
+                new Link(thisNode, otherNode);
+
+                // If either nodes has too many connections then remove a random connection from that node
+                if (thisNode.exceedLimit(maxConnection)) {
+                    thisNode.removeRandomLink(rand);
+                }
+                // Check the other node in case it still has too many connections
+                if (otherNode.exceedLimit(maxConnection)) {
+                    otherNode.removeRandomLink(rand);
                 }
             }
-
             // Increment to look at the next node and set of links
             nodeIndex++;
             genotypeIndex += range;
@@ -287,7 +284,7 @@ public class Search extends Thread{
      * @param pop the current population
      * @return the new population
      */
-    private Population GenerateNewPopulation(Population pop, int numParents, int numChildren, double mutationPercent, boolean randomInheritance) {
+    private Population GenerateNewPopulation(Population pop, int numParents, int numChildren, double mutationPercent, boolean sectionInheritance) {
         Population newpop = new Population(popSize * (numChildren / numParents));
 
         // Integer list of indexes of solutions in the pop that have not been selected as parents yet
@@ -315,20 +312,19 @@ public class Search extends Thread{
                 // Initialise the child solution
                 Genotype newChild = new Genotype(numberOfUniqueLinks);
 
-                // Fill the child using bits from the parents solution in the current population, pop
-                if(randomInheritance) {
-                    // Inherit each bit from a random parent
-                    for (int b = 0; b < numberOfUniqueLinks; b++) {
-                        newChild.set(b, parents[rand.nextInt(numParents)].getBit(b));
+                // Take a byte from each parent
+                if(sectionInheritance){
+                    int numberOfSections = numberOfUniqueLinks / 8;
+                    for (int s = 0; s < numberOfSections; s++){
+                        Byte section = parents[rand.nextInt(numParents)].getByte(s);
+                        newChild.set(s, section);
                     }
                 }
-                // Else take a section of bits from each parent
-                else{
-                    int cloneSize = numberOfUniqueLinks / numParents;
-                    int startIndex = cloneSize;
-                    for (int p = 0; p < numParents; p++){
-                        Genotype section = parents[p].getSubset(startIndex, startIndex + cloneSize);
-                        newChild.set(startIndex, section);
+                // Fill the child using bits from the parents solution in the current population, pop
+                else {
+                    // Inherit each bit from a random parent
+                    for (int b = 0; b < numberOfUniqueLinks; b++) {
+                        newChild.set(b, parents[rand.nextInt(numParents)].isSet(b));
                     }
                 }
 

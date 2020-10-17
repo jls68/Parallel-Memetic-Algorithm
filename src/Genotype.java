@@ -3,31 +3,33 @@ import java.util.List;
 
 public class Genotype {
 
-    boolean[] encodedSolution;
+    byte[] encodedSolution;
 
     public Genotype(int length){
-        encodedSolution = new boolean[length];
+        // Calculate how many bytes will be needed to encode the state of all possible connections
+        int byteCount = (length + 7) / 8;
+        encodedSolution = new byte[byteCount];
     }
 
     public int length(){
-        return encodedSolution.length;
+        return encodedSolution.length * 8;
+    }
+
+    private int getMask(int index){
+        return 1 << (index % 8);
     }
 
     public void flip(int index){
-        encodedSolution[index] = !encodedSolution[index];
+        encodedSolution[index / 8] = (byte) (encodedSolution[index / 8] ^ getMask(index));
     }
 
     public boolean isSet(int index){
-        return encodedSolution[index] == true;
+        byte b = encodedSolution[index / 8];
+        return (b & getMask(index)) > 0;
     }
 
-    /**
-     * Get a bit of the genotype
-     * @param index
-     * @return
-     */
-    public boolean getBit(int index) {
-        return encodedSolution[index];
+    public byte getByte(int byteIndex){
+        return encodedSolution[byteIndex];
     }
 
     /**
@@ -38,26 +40,34 @@ public class Genotype {
      */
     public Genotype getSubset(int startIndex, int endIndex) {
         Genotype subset = new Genotype(endIndex - startIndex);
-        int i = 0;
-        for(int j = startIndex; j < endIndex; j++){
-            subset.set(i, encodedSolution[j]);
-            i++;
+        for(int j = this.nextSetBit(startIndex); j < endIndex; j = this.nextSetBit(j + 1)){
+            subset.set(j - startIndex, true);
         }
         return subset;
     }
 
-    public void set(int index, boolean value){
-        encodedSolution[index] = value;
-    }
-
-    public void set(int startIndex, Genotype subset){
-        for(int i = 0; i < subset.length() && startIndex + 1 < encodedSolution.length; i++) {
-            encodedSolution[startIndex + 1] = subset.getBit(i);
+    /**
+     * Set the a bit to a specific value
+     * @param index of the bit
+     * @param thereIsLink when true sets the bit to one else it is set to zero
+     */
+    public void set(int index, boolean thereIsLink){
+        if(thereIsLink) {
+            // Set bit to one
+            encodedSolution[index / 8] |= getMask(index);
+        }
+        else {
+            // Clear bit so it is zero
+            encodedSolution[index / 8] &= ~getMask(index);
         }
     }
 
+    public void set(int byteIndex, byte newByte){
+        encodedSolution[byteIndex] = newByte;
+    }
+
     public Genotype clone(){
-        Genotype clone = new Genotype(encodedSolution.length);
+        Genotype clone = new Genotype(this.length());
         for(int i = 0; i < encodedSolution.length; i++){
             clone.set(i, encodedSolution[i]);
         }
@@ -65,12 +75,15 @@ public class Genotype {
     }
 
     public int nextSetBit(int i) {
-        for(i = i; i < encodedSolution.length; i++){
+        for(i = i; i < this.length(); i++){
+            if( i < 0){
+                return this.length();
+            }
             if(isSet(i)){
                 return i;
             }
         }
-        // Return encodedSolution.length if no next set bit
+        // Return this.length() if no next set bit
         return i;
     }
 
@@ -81,8 +94,8 @@ public class Genotype {
      */
     public String idLinks(String[] linkIDs){
         String outputMessage = "Links=";
-        for (int i = 0; i < encodedSolution.length; i++){
-            if(encodedSolution[i]){
+        for (int i = 0; i < this.length(); i++){
+            if(this.isSet(i)){
                 outputMessage += " " + linkIDs[i];
             }
         }
