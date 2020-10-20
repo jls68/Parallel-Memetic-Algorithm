@@ -9,6 +9,8 @@ import java.util.concurrent.*;
 
 public class Main {
 
+    private static int IMPOSSIBLE_CONNECTION = 1000;
+
     // Global variables to be read in by readCSV method
     private static int numberOfNodes;
     private static int numberOfUniqueLinks;
@@ -24,25 +26,46 @@ public class Main {
         try {
             BufferedReader br = new BufferedReader(new FileReader(filePath));
 
-            String line = br.readLine();
-            String[] split = line.split(",");
-            numberOfNodes = Integer.parseInt(split[1]);
+            numberOfNodes = Integer.parseInt(br.readLine().split(",")[1]);
             numberOfUniqueLinks = (numberOfNodes * (numberOfNodes - 1)) / 2;
             linkIDs = new String[numberOfUniqueLinks];
             linkLengths = new int[numberOfUniqueLinks];
+
             int i = 0;
 
-            while ("" != (line = br.readLine()) && i < numberOfUniqueLinks){
-                split = line.split(",");
-                linkIDs[i] = split[0];
-                //TODO
-                // Check fro missing weights
-                linkLengths[i] = Integer.parseInt(split[1]);
-                i++;
-            }
-            //TODO
-            // Check that all the link weights have been given
+            // Read the information for the first possible link
+            String line = br.readLine();
+            String[] split = line.split(",");
+            String[] nodeIDs = split[0].split("-");
 
+            for(int n = 1; n <= numberOfNodes; n++) {
+                for (int l = n + 1; l <= numberOfNodes; l++) {
+
+                    int firstNode = Integer.parseInt(nodeIDs[0]);
+                    int secondNode = Integer.parseInt(nodeIDs[1]);
+
+                    // Check if we have the information for the next link
+                    if (line != "" && firstNode == n && secondNode == l) {
+                        // Add the link information
+                        linkIDs[i] = split[0];
+                        linkLengths[i] = Integer.parseInt(split[1]);
+
+                        // Read in the information on the next line
+                        line = br.readLine();
+                        if(line != "" && line != null) {
+                            split = line.split(",");
+                            nodeIDs = split[0].split("-");
+                        }
+                    }
+                    // Else this link is impossible
+                    else {
+                        // Add impossible link placeholder
+                        linkIDs[i] = n + "x" + l;
+                        linkLengths[i] = IMPOSSIBLE_CONNECTION;
+                    }
+                    i++;
+                }
+            }
         } catch (FileNotFoundException e) {
             //TODO
             e.printStackTrace();
