@@ -19,13 +19,13 @@ public class Genotype {
         return 1 << (index % 8);
     }
 
-    public void flip(int index){
-        encodedSolution[index / 8] = (byte) (encodedSolution[index / 8] ^ getMask(index));
-    }
-
     public boolean isSet(int index){
         byte b = encodedSolution[index / 8];
         return (b & getMask(index)) > 0;
+    }
+
+    public void flip(int index){
+        encodedSolution[index / 8] = (byte) (encodedSolution[index / 8] ^ getMask(index));
     }
 
     public byte getByte(int byteIndex){
@@ -117,8 +117,13 @@ public class Genotype {
 
     @Override
     public String toString() {
+        String geno = "";
+        for (int b = 0; b < encodedSolution.length; b++) {
+            String newByte = String.format("%8s", Integer.toBinaryString(encodedSolution[b] & 0xFF)).replace(' ', '0');
+            geno += newByte + " ";
+        }
         return "Genotype{" +
-                "encodedSolution=" + Arrays.toString(encodedSolution) +
+                "encodedSolution= " + geno +
                 '}';
     }
 }
