@@ -122,22 +122,51 @@ public class Main {
                             i++;
                         }
 
-                        //TODO
                         // Optional -parents argument followed by an integer is the number of parents
+                        else if (args[i].equals("-parents")) {
+                            numParents = Integer.parseInt(args[i + 1]);
+                            i++;
+                        }
                         // Optional -preserve argument followed by a double is the preserve Percent
+                        else if (args[i].equals("-preserve")) {
+                            preservePercent = Integer.parseInt(args[i + 1]);
+                            i++;
+                        }
                         // Optional -mutate argument followed by a double is the mutatePercent
-                        // Optional argument of a plus or comma keyword to select the recombination method
+                        else if (args[i].equals("-mutate")) {
+                            mutatePercent = Integer.parseInt(args[i + 1]);
+                            i++;
+                        }
+                        // Optional argument of a -plus or -comma keyword to select the recombination method
+                        else if (args[i].equals("-plus") ) {
+                            plusInsteadOfComma = true;
+                        }
+                        else if (args[i].equals("-comma") ) {
+                            plusInsteadOfComma = true;
+                        }
                         // Optional argument of -replicated or -synchronous to select the parallelism method and
                         //  followed by an integer to choose the number cores to use
+                        else if (args[i].equals("-replicated") ) {
+                            replicatedInsteadOfSynchronous = true;
+                        }
+                        else if (args[i].equals("-synchronous") ) {
+                            replicatedInsteadOfSynchronous = false;
+                        }
                         // Optional argument of -kMax followed by a long is the max time to search
-
+                        else if (args[i].equals("-kMax")) {
+                            kMax = Integer.parseInt(args[i + 1]);
+                            i++;
+                        }
                         // Optional argument of -tMax followed by a long is the max time to search
                         else if (args[i].equals("-tMax")) {
                             tMax = Integer.parseInt(args[i + 1]);
                             i++;
                         }
-                        //TODO
                         // Optional argument of -localtMax followed by a long is the max time to do local search
+                        else if (args[i].equals("-localtMax")) {
+                            localtMax = Integer.parseInt(args[i + 1]);
+                            i++;
+                        }
                     }
                 }
                 // Start the timer to record how long it takes to search for the best solution.
