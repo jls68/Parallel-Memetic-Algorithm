@@ -137,12 +137,12 @@ public static void doRuns(String[] args){
                     }
                     // Optional -preserve argument followed by a double is the preserve Percent
                     else if (args[i].equals("-preserve")) {
-                        preservePercent = Integer.parseInt(args[i + 1]);
+                        preservePercent = Double.parseDouble(args[i + 1]);
                         i++;
                     }
                     // Optional -mutate argument followed by a double is the mutatePercent
                     else if (args[i].equals("-mutate")) {
-                        mutatePercent = Integer.parseInt(args[i + 1]);
+                        mutatePercent = Double.parseDouble(args[i + 1]);
                         i++;
                     }
                     // Optional argument of a -plus or -comma keyword to select the recombination method
