@@ -99,7 +99,7 @@ public static void doRuns(String[] args){
     boolean replicatedInsteadOfSynchronous = true;
     long tMax = 1;
     long localtMax = (long) 0.01;
-    int kMax = 10;
+    //int kMax = 10;
     Random rand = new Random();
 
     try {
@@ -160,19 +160,14 @@ public static void doRuns(String[] args){
                     else if (args[i].equals("-synchronous") ) {
                         replicatedInsteadOfSynchronous = false;
                     }
-                    // Optional argument of -kMax followed by a long is the max time to search
-                    else if (args[i].equals("-kMax")) {
-                        kMax = Integer.parseInt(args[i + 1]);
-                        i++;
-                    }
                     // Optional argument of -tMax followed by a long is the max time to search
                     else if (args[i].equals("-tMax")) {
-                        tMax = Integer.parseInt(args[i + 1]);
+                        tMax = (long) Double.parseDouble(args[i + 1]);
                         i++;
                     }
                     // Optional argument of -localtMax followed by a long is the max time to do local search
                     else if (args[i].equals("-localtMax")) {
-                        localtMax = Integer.parseInt(args[i + 1]);
+                        localtMax = (long) Double.parseDouble(args[i + 1]);
                         i++;
                     }
                 }
@@ -189,7 +184,7 @@ public static void doRuns(String[] args){
                 Search[] searches = new Search[n_pr];
                 for (int i = 0; i < n_pr; i++) {
                     searches[i] = new Search(rand, popSize, numParents, numChildren, numberOfNodes, numberOfUniqueLinks, maxConnection,
-                            linkLengths, mutatePercent, preservePercent, sectionInheritance, plusInsteadOfComma, tMax, localtMax, kMax);
+                            linkLengths, mutatePercent, preservePercent, sectionInheritance, plusInsteadOfComma, tMax, localtMax);
                 }
 
                 List<Callable<Genotype>> tasks = new ArrayList<Callable<Genotype>>();
@@ -232,7 +227,7 @@ public static void doRuns(String[] args){
 
             } else {
                 Search search = new Search(rand, popSize, numParents, numChildren, numberOfNodes, numberOfUniqueLinks, maxConnection,
-                        linkLengths, mutatePercent, preservePercent, sectionInheritance, plusInsteadOfComma, tMax, localtMax, kMax);
+                        linkLengths, mutatePercent, preservePercent, sectionInheritance, plusInsteadOfComma, tMax, localtMax);
                 search.run();
                 search.join(0);
                 bestSolution = search.getResult();

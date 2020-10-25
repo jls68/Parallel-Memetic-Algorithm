@@ -26,7 +26,7 @@ public class Search extends Thread{
 
 
     Search(Random rand, int popSize, int numParents, int numChildren, int numberOfNodes, int numberOfUniqueLinks, int maxConnection, int[] linkLengths,
-           double mutatePercent, double preservePercent, boolean sectionInheritance, boolean plusInsteadOfComma, long tMax, long localtMax, int kMax){
+           double mutatePercent, double preservePercent, boolean sectionInheritance, boolean plusInsteadOfComma, long tMax, long localtMax){
         convergeAmount = 0;
         this.rand = rand;
         this.popSize = popSize;
