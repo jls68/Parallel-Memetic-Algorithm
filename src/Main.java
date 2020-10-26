@@ -232,19 +232,34 @@ public class Main {
                         ", Replicated = " + replicated_n_pr + ", Synchronous = " + synchronous_n_pr + ", pop size = " + popSize + ", parents = " + numParents +
                         ", children = " + numChildren + ", preserve = " + preservePercent + ", mutate = " + mutatePercent + ", section = " +
                         sectionInheritance + ", plus = " + plusInsteadOfComma + ", tMax = " + tMax + ", kmax = " + kMax);
-                OptionalDouble average = Arrays.stream(runScores).average();
-                System.out.println(RUNS + " run average scores:\t" + average + "\t" + Arrays.toString(runScores));
+                System.out.println(RUNS + " run average scores:\t" + average(runScores) + "\t" + Arrays.toString(runScores));
                 System.out.println("best solution\t" + runScores[bestSolutionIndex] + "\t" + runSolutions[bestSolutionIndex]);
                 System.out.println("best solution lengths\t " + runSolutions[bestSolutionIndex].idLinks(linkIDs));
-                OptionalInt max =Arrays.stream(conversions).max();
-                System.out.println("max number of conversions\t" + max);
-                average = Arrays.stream(conversions).average();
-                System.out.println("avg number of conversions\t" + average + "\t" + Arrays.toString(conversions));
+                System.out.println("max number of conversions\t" + max(conversions));
+                System.out.println("avg number of conversions\t" + average(conversions) + "\t" + Arrays.toString(conversions));
             }
 
         } catch (NumberFormatException | InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
+    }
+
+    private static double average(int[] array){
+        double total = 0;
+        for(int i=0; i<array.length; i++){
+            total = total + array[i];
+        }
+        return total / array.length;
+    }
+
+    private static int max(int[] array){
+        int max = array[0];
+        for(int i=1; i<array.length; i++){
+            if(array[i] > max){
+                max = array[i];
+            }
+        }
+        return max;
     }
 
     public static Genotype doRun()
