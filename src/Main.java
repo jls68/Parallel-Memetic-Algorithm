@@ -95,7 +95,7 @@ public class Main {
         }
     }
 
-    public static Genotype compute(Search search) throws InterruptedException {
+    private static Genotype compute(Search search) throws InterruptedException {
         search.run();
         return search.getResult();
     }

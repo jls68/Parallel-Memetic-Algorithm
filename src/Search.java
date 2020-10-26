@@ -1,18 +1,18 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.RecursiveTask;
+import java.util.concurrent.*;
 
 public class Search extends Thread{
 
-    Random rand;
+    static Random rand;
     int convergeAmount;
     int popSize;
     int numParents;
     int numChildren;
-    int numberOfNodes;
+    static int numberOfNodes;
     int numberOfUniqueLinks;
-    int maxConnection;
+    static int maxConnection;
     int n_pr;
     static int[] linkLengths;
     double mutatePercent;
@@ -51,37 +51,41 @@ public class Search extends Thread{
     }
 
     public void run() {
-         initialRunTime = System.nanoTime();
+        initialRunTime = System.nanoTime();
         // Initialise starting population
-        Population pop = GenerateInitialPopulation(popSize);
-        do {
-            // Apply recombination, mutation
-            Population newpop = GenerateNewPopulation(pop, numParents, numChildren, mutatePercent, sectionInheritance);
-            // Select a subset of newpop for the next pop
-            if(plusInsteadOfComma) {
-                pop = UpdatePopulationPlus(pop, newpop);
-            }
-            else {
-                pop = UpdatePopulationComma(pop, newpop);
-            }
-            // Decide if we need to restart due to stagnation
-            if (pop.hasConverged()) {
-                pop = RestartPopulation(pop, preservePercent);
-                convergeAmount++;
-            }
-        } while (!TerminationCriterion(tMax));
-        // Find best solution in population
-        List<Integer>[] popPheno = ConvertPopToPhenotype(pop);
-        int index = FindBestSolution(popPheno);
-        // Store best solution
-        bestSolution = pop.getSolution(index);
+        Population pop = null;
+        try {
+            pop = GenerateInitialPopulation(popSize);
+            do {
+                // Apply recombination, mutation
+                Population newpop = GenerateNewPopulation(pop, numParents, numChildren, mutatePercent, sectionInheritance);
+                // Select a subset of newpop for the next pop
+                if (plusInsteadOfComma) {
+                    pop = UpdatePopulationPlus(pop, newpop);
+                } else {
+                    pop = UpdatePopulationComma(pop, newpop);
+                }
+                // Decide if we need to restart due to stagnation
+                if (pop.hasConverged()) {
+                    pop = RestartPopulation(pop, preservePercent);
+                    convergeAmount++;
+                }
+            } while (!TerminationCriterion(tMax));
+            // Find best solution in population
+            List<Integer>[] popPheno = ConvertPopToPhenotype(pop);
+            int index = FindBestSolution(popPheno);
+            // Store best solution
+            bestSolution = pop.getSolution(index);
 
-        //finish timing program
-        long finalTime = System.nanoTime();
-        //Please do not remove or change the format of this output message
-        System.out.println("Thread  " + this.getId() + " finished execution in " + (finalTime - initialRunTime) / 1E9 + " secs. Converged " + convergeAmount + " times.");
+            //finish timing program
+            long finalTime = System.nanoTime();
+            //Please do not remove or change the format of this output message
+            System.out.println("Thread  " + this.getId() + " finished execution in " + (finalTime - initialRunTime) / 1E9 + " secs. Converged " + convergeAmount + " times.");
 
-        addConverge(convergeAmount);
+            addConverge(convergeAmount);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private synchronized void addConverge(int convergeAmount){
@@ -92,7 +96,7 @@ public class Search extends Thread{
      * Clever method to get starting population
      * @return the starting population
      */
-    private Population GenerateInitialPopulation(int popSize){
+    private Population GenerateInitialPopulation(int popSize) throws InterruptedException {
         Population pop = new Population(popSize);
 
         // Generate and add the genotype encoded solutions to the initial population
@@ -135,44 +139,68 @@ public class Search extends Thread{
      * @param currentGeno the current solution in genotype space
      * @return the local best solution in genotype space
      */
-    private Genotype VND(Genotype currentGeno){
+    private Genotype VND(Genotype currentGeno) throws InterruptedException {
         Genotype xBest = currentGeno;
         int bestScore = Evaluate(Growth(xBest));
-        int k = 1;
-        do{
-            Genotype newGeno = getBestInNeighborhood(xBest, k, 0, linkLengths.length);
-            newGeno = Repair(newGeno);
-            int newScore = Evaluate(Growth(newGeno));
 
-            if(newScore < bestScore){
-                xBest = newGeno;
-                bestScore = newScore;
-                k = 1;
-            }
-            else{
-                k++;
-            }
-        } while(k < kMax);
-        return currentGeno;
-    }
+        SynchronousSearch[] SynchronousSearch = new SynchronousSearch[n_pr];
+        for (int j = 0; j < n_pr; j++) {
+            SynchronousSearch[j] = new SynchronousSearch(rand, currentGeno, kMax);
+        }
 
-
-    public Genotype getBestInNeighborhood(Genotype currentGeno, int k, int start, int end) {
-        Genotype xBest = null;
-        int bestScore = 1000;
-
-        // Create neighbours of solution that have k difference
-        for (int i = start; i < end; i++) {
-            Genotype xNew = GenerateNeighbour(currentGeno, i, k);
-            int newScore = Evaluate(Growth(xNew));
-
-            if (xBest == null || newScore < bestScore) {
-                xBest = xNew;
-                bestScore = newScore;
+        int i = 0;
+        while (i < linkLengths.length) {
+            for (int j = 0; j < n_pr && i < linkLengths.length; j++) {
+                SynchronousSearch[j].addIndex(i);
+                i++;
             }
         }
 
+        List<Callable<Genotype>> tasks = new ArrayList<Callable<Genotype>>();
+        for (final SynchronousSearch search : SynchronousSearch) {
+            Callable<Genotype> callable = new Callable<Genotype>() {
+                @Override
+                public Genotype call() throws Exception {
+                    return compute(search);
+                }
+            };
+            tasks.add(callable);
+        }
+
+        ExecutorService exec = Executors.newFixedThreadPool(n_pr);
+        // some other executors we could try to see the different behaviours
+        // ExecutorService exec = Executors.newCachedThreadPool();
+        // ExecutorService exec = Executors.newSingleThreadExecutor();
+
+        try {
+            // Start all searches to run in parallel
+            List<Future<Genotype>> results = exec.invokeAll(tasks);
+            // Find best solution of all searches
+            for (Future<Genotype> search : results) {
+
+                // Wait until all threads have finished execution and get best solution
+                Genotype newSolution = search.get();
+                // Convert to phenotype space to then evaluate
+                List<Integer> newPheno = Search.Growth(newSolution);
+                int newScore = Search.Evaluate(newPheno);
+                // Keep track of the solution with the best score
+                if (newScore < bestScore) {
+                    xBest = newSolution;
+                    bestScore = newScore;
+                }
+            }
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } finally {
+            exec.shutdown();
+        }
+
         return xBest;
+    }
+
+    private static Genotype compute(SynchronousSearch search) throws InterruptedException {
+        search.run();
+        return search.getResult();
     }
 
     /**
@@ -182,36 +210,8 @@ public class Search extends Thread{
      */
     private Genotype GenerateNeighbour(Genotype current){
         int i = rand.nextInt(current.length());
-        return GenerateNeighbour(current, i);
-    }
-
-
-    /**
-     * Generate a new solution in the neighbourhood of the given solution
-     * @param current solution in genotype space
-     * @param i the index of the bit to flip
-     * @return a neighbour solution in genotype space
-     */
-    private Genotype GenerateNeighbour(Genotype current, int i){
         current = current.clone();
         current.flip(i);
-        return current;
-    }
-
-    /**
-     * Generate a new solution in the neighbourhood of the given solution
-     * @param current solution in genotype space
-     * @param i the index of the first bit to flip
-     * @param k the number of other bits to also flip
-     * @return a neighbour solution in genotype space
-     */
-    private Genotype GenerateNeighbour(Genotype current, int i, int k){
-        current = current.clone();
-        current.flip(i);
-        for(int j = 1; j < k; j++){
-            int r = rand.nextInt(current.length());
-            current.flip(r);
-        }
         return current;
     }
 
@@ -238,7 +238,7 @@ public class Search extends Thread{
      * @param solution in genotype space
      * @return genotype of a feasible solution
      */
-    private Genotype Repair(Genotype solution) {
+    protected static Genotype Repair(Genotype solution) {
 
         Node[] nodes = new Node[numberOfNodes];
         for (int i = 0; i < numberOfNodes; i++) {
@@ -501,7 +501,7 @@ public class Search extends Thread{
      * @param preserve percent for a solutions from the current population to be put into thr nre population
      * @return a new population
      */
-    private Population RestartPopulation(Population pop, double preserve){
+    private Population RestartPopulation(Population pop, double preserve) throws InterruptedException {
         Population newpop = new Population(popSize);
         List<Integer>[] currPheno = ConvertPopToPhenotype(pop);
         // preserve is the percent of the solution to keep when restarting
