@@ -236,8 +236,8 @@ public class Main {
                         ", preserve = " + preservePercent + ", mutate = " + mutatePercent +
                         ", inherit bytes instead of bits = " + sectionInheritance);
                 System.out.println(RUNS + " run average scores:\t" + average(runScores) + "\t" + Arrays.toString(runScores));
-                System.out.println("best solution\t" + runScores[bestSolutionIndex] + "\t" + runSolutions[bestSolutionIndex]);
-                System.out.println("best solution lengths\t " + runSolutions[bestSolutionIndex].idLinks(linkIDs));
+                System.out.println("best solution\t" + runScores[bestSolutionIndex] + "\t" + runSolutions[bestSolutionIndex].idLinks(linkIDs));
+                System.out.println("best solution lengths\t\t" + Search.Growth(runSolutions[bestSolutionIndex]));
                 System.out.println("max number of conversions\t" + max(conversions));
                 System.out.println("avg number of conversions\t" + average(conversions) + "\t" + Arrays.toString(conversions));
                 System.out.println("max number of searches\t" + max(seacrhes));
