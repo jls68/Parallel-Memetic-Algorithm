@@ -208,8 +208,13 @@ public class Main {
                     }
                 }
 
+                //Check that the synchronous number of cores is greater than the number of links
+                if(synchronous_n_pr > linkLengths.length){
+                    synchronous_n_pr = linkLengths.length;
+                }
+
                 int[] conversions = new int[RUNS];
-                int[] seacrhes = new int[RUNS];
+                int[] searches = new int[RUNS];
                 Genotype[] runSolutions = new Genotype[RUNS];
                 int[] runScores = new int[RUNS];
                 int bestSolutionIndex = 0;
@@ -226,7 +231,7 @@ public class Main {
                         bestSolutionIndex = i;
                     }
                     conversions[i] = runConversions;
-                    seacrhes[i] = runSearches;
+                    searches[i] = runSearches;
                 }
                 System.out.println("============== Done ==============");
                 System.out.println("Dataset = " + filePath + ", number of nodes = " + numberOfNodes + ", max degree = " + maxConnection +
@@ -240,8 +245,8 @@ public class Main {
                 System.out.println("best solution lengths\t\t" + Search.Growth(runSolutions[bestSolutionIndex]));
                 System.out.println("max number of conversions\t" + max(conversions));
                 System.out.println("avg number of conversions\t" + average(conversions) + "\t" + Arrays.toString(conversions));
-                System.out.println("max number of searches\t" + max(seacrhes));
-                System.out.println("avg number of searches\t" + average(seacrhes) + "\t" + Arrays.toString(seacrhes));
+                System.out.println("max number of searches\t" + max(searches));
+                System.out.println("avg number of searches\t" + average(searches) + "\t" + Arrays.toString(searches));
             }
 
         } catch (NumberFormatException | InterruptedException | ExecutionException e) {
