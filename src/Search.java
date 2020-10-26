@@ -13,7 +13,7 @@ public class Search extends Thread{
     int numberOfNodes;
     int numberOfUniqueLinks;
     int maxConnection;
-    int kMax;
+    int n_pr;
     static int[] linkLengths;
     double mutatePercent;
     double preservePercent;
@@ -21,12 +21,12 @@ public class Search extends Thread{
     boolean plusInsteadOfComma;
     Genotype bestSolution;
     long tMax;
-    long localtMax;
+    int kMax;
     long initialRunTime;
 
 
-    Search(Random rand, int popSize, int numParents, int numChildren, int numberOfNodes, int numberOfUniqueLinks, int maxConnection, int[] linkLengths,
-           double mutatePercent, double preservePercent, boolean sectionInheritance, boolean plusInsteadOfComma, long tMax, long localtMax){
+    Search(Random rand, int popSize, int numParents, int numChildren, int numberOfNodes, int numberOfUniqueLinks, int maxConnection, int VNDn_pr, int[] linkLengths,
+           double mutatePercent, double preservePercent, boolean sectionInheritance, boolean plusInsteadOfComma, long tMax, int kMax){
         convergeAmount = 0;
         this.rand = rand;
         this.popSize = popSize;
@@ -35,13 +35,13 @@ public class Search extends Thread{
         this.numberOfNodes = numberOfNodes;
         this.numberOfUniqueLinks = numberOfUniqueLinks;
         this.maxConnection = maxConnection;
+        n_pr = VNDn_pr;
         this.linkLengths = linkLengths;
         this.mutatePercent = mutatePercent;
         this.preservePercent = preservePercent;
         this.sectionInheritance = sectionInheritance;
         this.plusInsteadOfComma = plusInsteadOfComma;
         this.tMax = tMax;
-        this.localtMax = localtMax;
         this.kMax = kMax;
     }
 
@@ -96,7 +96,7 @@ public class Search extends Thread{
             Genotype s = GenerateRandomConfiguration();
 
             // Preform local Search
-            s = LocalSearch(s);
+            s = VND(s);
 
             // Add the new solution to the population
             pop.Insert(i, s);
@@ -131,18 +131,44 @@ public class Search extends Thread{
      * @param currentGeno the current solution in genotype space
      * @return the local best solution in genotype space
      */
-    private Genotype LocalSearch(Genotype currentGeno){
-        List<Integer> currentPheno = Growth(currentGeno);
+    private Genotype VND(Genotype currentGeno){
+        Genotype xBest = currentGeno;
+        int bestScore = Evaluate(Growth(xBest));
+        int k = 1;
         do{
-            Genotype newGeno = GenerateNeighbour(currentGeno);
+            Genotype newGeno = getBestInNeighborhood(xBest, k, 0, linkLengths.length);
             newGeno = Repair(newGeno);
-            List<Integer> newPheno = Growth(newGeno);
-            if(IsBetterThan(newPheno, currentPheno)){
-                currentGeno = newGeno;
-                currentPheno = newPheno;
+            int newScore = Evaluate(Growth(newGeno));
+
+            if(newScore < bestScore){
+                xBest = newGeno;
+                bestScore = newScore;
+                k = 1;
             }
-        } while(!TerminationCriterion(localtMax));
+            else{
+                k++;
+            }
+        } while(k < kMax);
         return currentGeno;
+    }
+
+
+    public Genotype getBestInNeighborhood(Genotype currentGeno, int k, int start, int end) {
+        Genotype xBest = null;
+        int bestScore = 1000;
+
+        // Create neighbours of solution that have k difference
+        for (int i = start; i < end; i++) {
+            Genotype xNew = GenerateNeighbour(currentGeno, i, k);
+            int newScore = Evaluate(Growth(xNew));
+
+            if (xBest == null || newScore < bestScore) {
+                xBest = xNew;
+                bestScore = newScore;
+            }
+        }
+
+        return xBest;
     }
 
     /**
@@ -152,8 +178,36 @@ public class Search extends Thread{
      */
     private Genotype GenerateNeighbour(Genotype current){
         int i = rand.nextInt(current.length());
+        return GenerateNeighbour(current, i);
+    }
+
+
+    /**
+     * Generate a new solution in the neighbourhood of the given solution
+     * @param current solution in genotype space
+     * @param i the index of the bit to flip
+     * @return a neighbour solution in genotype space
+     */
+    private Genotype GenerateNeighbour(Genotype current, int i){
         current = current.clone();
         current.flip(i);
+        return current;
+    }
+
+    /**
+     * Generate a new solution in the neighbourhood of the given solution
+     * @param current solution in genotype space
+     * @param i the index of the first bit to flip
+     * @param k the number of other bits to also flip
+     * @return a neighbour solution in genotype space
+     */
+    private Genotype GenerateNeighbour(Genotype current, int i, int k){
+        current = current.clone();
+        current.flip(i);
+        for(int j = 1; j < k; j++){
+            int r = rand.nextInt(current.length());
+            current.flip(r);
+        }
         return current;
     }
 
@@ -456,7 +510,7 @@ public class Search extends Thread{
         }
         for(int i = numberPreserved; i < popSize; i++){
             Genotype s = GenerateRandomConfiguration();
-            s = LocalSearch(s);
+            s = VND(s);
             newpop.Insert(i, s);
         }
         return newpop;

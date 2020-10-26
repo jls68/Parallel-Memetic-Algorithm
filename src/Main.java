@@ -88,6 +88,7 @@ public class Main {
 public static void doRuns(String[] args){
     // Set default parameters
     int n_pr =  Runtime.getRuntime().availableProcessors();
+    int VNDn_pr =  1;
     int popSize = 8;
     int numParents = 2;
     int numChildren = 4; // TODO Allow the number of children to be set
@@ -98,8 +99,7 @@ public static void doRuns(String[] args){
     boolean plusInsteadOfComma = true;
     boolean replicatedInsteadOfSynchronous = true;
     long tMax = 1;
-    long localtMax = (long) 0.01;
-    //int kMax = 10;
+    int kMax = 1;
     Random rand = new Random();
 
     try {
@@ -165,9 +165,9 @@ public static void doRuns(String[] args){
                         tMax = (long) Double.parseDouble(args[i + 1]);
                         i++;
                     }
-                    // Optional argument of -localtMax followed by a long is the max time to do local search
-                    else if (args[i].equals("-localtMax")) {
-                        localtMax = (long) Double.parseDouble(args[i + 1]);
+                    // Optional argument of -kMax followed by a long is the max time to do local search
+                    else if (args[i].equals("-kMax")) {
+                        kMax = Integer.parseInt(args[i + 1]);
                         i++;
                     }
                 }
@@ -183,8 +183,8 @@ public static void doRuns(String[] args){
             if (replicatedInsteadOfSynchronous) {
                 Search[] searches = new Search[n_pr];
                 for (int i = 0; i < n_pr; i++) {
-                    searches[i] = new Search(rand, popSize, numParents, numChildren, numberOfNodes, numberOfUniqueLinks, maxConnection,
-                            linkLengths, mutatePercent, preservePercent, sectionInheritance, plusInsteadOfComma, tMax, localtMax);
+                    searches[i] = new Search(rand, popSize, numParents, numChildren, numberOfNodes, numberOfUniqueLinks, maxConnection, VNDn_pr,
+                            linkLengths, mutatePercent, preservePercent, sectionInheritance, plusInsteadOfComma, tMax, kMax);
                 }
 
                 List<Callable<Genotype>> tasks = new ArrayList<Callable<Genotype>>();
@@ -226,8 +226,8 @@ public static void doRuns(String[] args){
                 }
 
             } else {
-                Search search = new Search(rand, popSize, numParents, numChildren, numberOfNodes, numberOfUniqueLinks, maxConnection,
-                        linkLengths, mutatePercent, preservePercent, sectionInheritance, plusInsteadOfComma, tMax, localtMax);
+                Search search = new Search(rand, popSize, numParents, numChildren, numberOfNodes, numberOfUniqueLinks, maxConnection, VNDn_pr,
+                        linkLengths, mutatePercent, preservePercent, sectionInheritance, plusInsteadOfComma, tMax, kMax);
                 search.run();
                 search.join(0);
                 bestSolution = search.getResult();
