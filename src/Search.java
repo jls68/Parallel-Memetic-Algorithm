@@ -23,7 +23,7 @@ public class Search extends Thread{
     Genotype bestSolution;
     double tMax;
     int kMax;
-    long initialRunTime;
+    private long initialRunTime;
     boolean VND;
 
 
@@ -46,6 +46,7 @@ public class Search extends Thread{
         this.plusInsteadOfComma = plusInsteadOfComma;
         this.tMax = tMax;
         this.kMax = kMax;
+        this.VND = VND;
     }
 
     synchronized List<Genotype> combine (List<Genotype> inputList, Genotype newvalue){
@@ -227,7 +228,7 @@ public class Search extends Thread{
                 currentGeno = newGeno;
                     currentPheno = newPheno;
                 }
-        } while(!TerminationCriterion(tMax / kMax));
+        } while(!TerminationCriterion(tMax / 100));
         searchAmount++;
         return currentGeno;
     }
@@ -560,9 +561,12 @@ public class Search extends Thread{
      */
     private boolean TerminationCriterion(double maxTime){
         final long finalTime = System.nanoTime();
-       if( (finalTime - initialRunTime) / 1E9 > maxTime)
-        return true;
-       else return false;
+       if( (finalTime - initialRunTime) / 1E9 > maxTime) {
+           return true;
+       }
+       else {
+           return false;
+       }
     }
 
     public Genotype getResult() {

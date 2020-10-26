@@ -97,6 +97,87 @@ public class Main {
         return search.getResult();
     }
 
+    private static double average(int[] array){
+        double total = 0;
+        for(int i=0; i<array.length; i++){
+            total = total + array[i];
+        }
+        return total / array.length;
+    }
+
+    private static int max(int[] array){
+        int max = array[0];
+        for(int i=1; i<array.length; i++){
+            if(array[i] > max){
+                max = array[i];
+            }
+        }
+        return max;
+    }
+
+    public static Genotype doRun()
+            throws InterruptedException, ExecutionException {
+        // Start the timer to record how long it takes to search for the best solution.
+        final long initialTime = System.nanoTime();
+
+        Genotype bestSolution = null;
+        List<Integer> solutionPhenotype = null;
+        int bestScore = 0;
+
+        Search[] searches = new Search[replicated_n_pr];
+        for (int i = 0; i < replicated_n_pr; i++) {
+            searches[i] = new Search(rand, popSize, numParents, numChildren, numberOfNodes, numberOfUniqueLinks, maxConnection, synchronous_n_pr,
+                    linkLengths, mutatePercent, preservePercent, sectionInheritance, plusInsteadOfComma, tMax, kMax, VND);
+        }
+
+        List<Callable<Genotype>> tasks = new ArrayList<Callable<Genotype>>();
+        for (final Search search : searches) {
+            Callable<Genotype> callable = new Callable<Genotype>() {
+                @Override
+                public Genotype call() throws Exception {
+                    return compute(search);
+                }
+            };
+            tasks.add(callable);
+        }
+
+        ExecutorService exec = Executors.newFixedThreadPool(replicated_n_pr);
+        // some other executors we could try to see the different behaviours
+        // ExecutorService exec = Executors.newCachedThreadPool();
+        // ExecutorService exec = Executors.newSingleThreadExecutor();
+
+        try {
+            // Start all searches to run in parallel
+            List<Future<Genotype>> results = exec.invokeAll(tasks);
+            // Find best solution of all searches
+            for (Future<Genotype> search : results) {
+
+                // Wait until all threads have finished execution and get best solution
+                Genotype newSolution = search.get();
+                // Convert to phenotype space to then evaluate
+                List<Integer> newPheno = Search.Growth(newSolution);
+                int newScore = Search.Evaluate(newPheno);
+                // Keep track of the solution with the best score
+                if (bestSolution == null || newScore < bestScore) {
+                    bestSolution = newSolution;
+                    solutionPhenotype = newPheno;
+                    bestScore = newScore;
+                }
+            }
+        } finally {
+            exec.shutdown();
+        }
+        final double secondsToComplete = (System.nanoTime() - initialTime) / 1E9;
+
+        System.out.println("Completed in " + secondsToComplete + " seconds");
+        System.out.println("Genotype: " + bestSolution.toString());
+        System.out.println("Phenotype: " + solutionPhenotype.toString());
+        System.out.println(bestSolution.idLinks(linkIDs));
+        System.out.println("Score: " + bestScore);
+
+        return bestSolution;
+    }
+
 /**Usage: [filePath] [maxDegree] -S [randomSeed] -Pop [popSize] -parents [parentSize]
  * -preserve [percentagePreserved] -mutate [mutationProbability] {-plus, -comma} {-replicated, -synchronous
  * -tMax [maxRunTime]");
@@ -259,86 +340,5 @@ public class Main {
         } catch (NumberFormatException | InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
-    }
-
-    private static double average(int[] array){
-        double total = 0;
-        for(int i=0; i<array.length; i++){
-            total = total + array[i];
-        }
-        return total / array.length;
-    }
-
-    private static int max(int[] array){
-        int max = array[0];
-        for(int i=1; i<array.length; i++){
-            if(array[i] > max){
-                max = array[i];
-            }
-        }
-        return max;
-    }
-
-    public static Genotype doRun()
-            throws InterruptedException, ExecutionException {
-        // Start the timer to record how long it takes to search for the best solution.
-        final long initialTime = System.nanoTime();
-
-        Genotype bestSolution = null;
-        List<Integer> solutionPhenotype = null;
-        int bestScore = 0;
-
-        Search[] searches = new Search[replicated_n_pr];
-        for (int i = 0; i < replicated_n_pr; i++) {
-            searches[i] = new Search(rand, popSize, numParents, numChildren, numberOfNodes, numberOfUniqueLinks, maxConnection, synchronous_n_pr,
-                    linkLengths, mutatePercent, preservePercent, sectionInheritance, plusInsteadOfComma, tMax, kMax, VND);
-        }
-
-        List<Callable<Genotype>> tasks = new ArrayList<Callable<Genotype>>();
-        for (final Search search : searches) {
-            Callable<Genotype> callable = new Callable<Genotype>() {
-                @Override
-                public Genotype call() throws Exception {
-                    return compute(search);
-                }
-            };
-            tasks.add(callable);
-        }
-
-        ExecutorService exec = Executors.newFixedThreadPool(replicated_n_pr);
-        // some other executors we could try to see the different behaviours
-        // ExecutorService exec = Executors.newCachedThreadPool();
-        // ExecutorService exec = Executors.newSingleThreadExecutor();
-
-        try {
-            // Start all searches to run in parallel
-            List<Future<Genotype>> results = exec.invokeAll(tasks);
-            // Find best solution of all searches
-            for (Future<Genotype> search : results) {
-
-                // Wait until all threads have finished execution and get best solution
-                Genotype newSolution = search.get();
-                // Convert to phenotype space to then evaluate
-                List<Integer> newPheno = Search.Growth(newSolution);
-                int newScore = Search.Evaluate(newPheno);
-                // Keep track of the solution with the best score
-                if (bestSolution == null || newScore < bestScore) {
-                    bestSolution = newSolution;
-                    solutionPhenotype = newPheno;
-                    bestScore = newScore;
-                }
-            }
-        } finally {
-            exec.shutdown();
-        }
-        final double secondsToComplete = (System.nanoTime() - initialTime) / 1E9;
-
-        System.out.println("Completed in " + secondsToComplete + " seconds");
-        System.out.println("Genotype: " + bestSolution.toString());
-        System.out.println("Phenotype: " + solutionPhenotype.toString());
-        System.out.println(bestSolution.idLinks(linkIDs));
-        System.out.println("Score: " + bestScore);
-
-        return bestSolution;
     }
 }
