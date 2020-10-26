@@ -17,12 +17,6 @@ public class Main {
     private static int[] linkLengths;
     private static String[] linkIDs;
 
-    // Global variables to record performance
-    private static Genotype[] runSolutions;
-    private static int[] runScores;
-    private static int[] conversions;
-    protected static int runConversions;
-
     // Global variables to be read from argument
     private static Random rand;
     private static int replicated_n_pr;
@@ -36,6 +30,10 @@ public class Main {
     private static boolean plusInsteadOfComma;
     private static double tMax;
     private static int kMax;
+
+    // Global variables for measuring performance
+    protected static int runConversions;
+    protected static int runSearches;
 
     /**
      * Read in the information from the csv file
@@ -210,12 +208,14 @@ public class Main {
                     }
                 }
 
-                conversions = new int[RUNS];
-                runSolutions = new Genotype[RUNS];
-                runScores = new int[RUNS];
+                int[] conversions = new int[RUNS];
+                int[] seacrhes = new int[RUNS];
+                Genotype[] runSolutions = new Genotype[RUNS];
+                int[] runScores = new int[RUNS];
                 int bestSolutionIndex = 0;
                 for (int i = 0; i < RUNS; i++) {
                     runConversions = 0;
+                    runSearches = 0;
                     System.out.println("=======================");
                     System.out.println("Run number " + (i + 1) + ":");
                     System.out.println("=======================");
@@ -226,6 +226,7 @@ public class Main {
                         bestSolutionIndex = i;
                     }
                     conversions[i] = runConversions;
+                    seacrhes[i] = runSearches;
                 }
                 System.out.println("============== Done ==============");
                 System.out.println("Dataset = " + filePath + ", number of nodes = " + numberOfNodes + ", max degree = " + maxConnection +
@@ -239,6 +240,8 @@ public class Main {
                 System.out.println("best solution lengths\t " + runSolutions[bestSolutionIndex].idLinks(linkIDs));
                 System.out.println("max number of conversions\t" + max(conversions));
                 System.out.println("avg number of conversions\t" + average(conversions) + "\t" + Arrays.toString(conversions));
+                System.out.println("max number of searches\t" + max(seacrhes));
+                System.out.println("avg number of searches\t" + average(seacrhes) + "\t" + Arrays.toString(seacrhes));
             }
 
         } catch (NumberFormatException | InterruptedException | ExecutionException e) {

@@ -7,6 +7,7 @@ public class Search extends Thread{
 
     static Random rand;
     int convergeAmount;
+    int searchAmount;
     int popSize;
     int numParents;
     int numChildren;
@@ -28,6 +29,7 @@ public class Search extends Thread{
     Search(Random rand, int popSize, int numParents, int numChildren, int numberOfNodes, int numberOfUniqueLinks, int maxConnection, int VNDn_pr, int[] linkLengths,
            double mutatePercent, double preservePercent, boolean sectionInheritance, boolean plusInsteadOfComma, double tMax, int kMax){
         convergeAmount = 0;
+        searchAmount = 0;
         this.rand = rand;
         this.popSize = popSize;
         this.numParents = numParents;
@@ -83,9 +85,14 @@ public class Search extends Thread{
             System.out.println("Thread  " + this.getId() + " finished execution in " + (finalTime - initialRunTime) / 1E9 + " secs. Converged " + convergeAmount + " times.");
 
             addConverge(convergeAmount);
+            addSearches(searchAmount);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    private synchronized void addSearches(int searchAmount) {
+        Main.runSearches += searchAmount;
     }
 
     private synchronized void addConverge(int convergeAmount){
@@ -195,6 +202,7 @@ public class Search extends Thread{
             exec.shutdown();
         }
 
+        searchAmount++;
         return xBest;
     }
 
@@ -455,14 +463,13 @@ public class Search extends Thread{
         Population nextpop = new Population(popSize);
         List<Integer>[] newPheno = ConvertPopToPhenotype(newpop);
         // Select subset of newpop
-        // we select the best popsize elements from newpop
-        int newBest = FindBestSolution(newPheno);
         for(int i = 0; i < popSize; i++) {
+            // we select the best popsize elements from newpop
+            int newBest = FindBestSolution(newPheno);
             // Add the best solutions to the next population
             nextpop.Insert(i, newpop.getSolution(newBest));
             // Get the next best solution from the new population
             newPheno[newBest] = null;
-            newBest = FindBestSolution(newPheno);
         }
         return nextpop;
     }
@@ -488,7 +495,7 @@ public class Search extends Thread{
     private int FindBestSolution(List<Integer>[] phenotypes){
         int best = 0;
         for (int i = 1; i < phenotypes.length; i++){
-            if(phenotypes[i] != null && (phenotypes[best] == null ||Evaluate(phenotypes[i]) < Evaluate(phenotypes[best]))){
+            if(phenotypes[i] != null && (phenotypes[best] == null || IsBetterThan(phenotypes[i], phenotypes[best]))){
                 best = i;
             }
         }
