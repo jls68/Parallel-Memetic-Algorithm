@@ -229,9 +229,11 @@ public class Main {
                 }
                 System.out.println("============== Done ==============");
                 System.out.println("Dataset = " + filePath + ", number of nodes = " + numberOfNodes + ", max degree = " + maxConnection +
-                        ", Replicated = " + replicated_n_pr + ", Synchronous = " + synchronous_n_pr + ", pop size = " + popSize + ", parents = " + numParents +
-                        ", children = " + numChildren + ", preserve = " + preservePercent + ", mutate = " + mutatePercent + ", section = " +
-                        sectionInheritance + ", plus = " + plusInsteadOfComma + ", tMax = " + tMax + ", kmax = " + kMax);
+                        ", tMax = " + tMax + ", kMax = " + kMax +
+                        ", Replicated = " + replicated_n_pr + ", Synchronous = " + synchronous_n_pr +
+                        ", pop size = " + popSize + ", parents = " + numParents + ", children = " + numChildren + ", plus = " + plusInsteadOfComma +
+                        ", preserve = " + preservePercent + ", mutate = " + mutatePercent +
+                        ", inherit bytes instead of bits = " + sectionInheritance);
                 System.out.println(RUNS + " run average scores:\t" + average(runScores) + "\t" + Arrays.toString(runScores));
                 System.out.println("best solution\t" + runScores[bestSolutionIndex] + "\t" + runSolutions[bestSolutionIndex]);
                 System.out.println("best solution lengths\t " + runSolutions[bestSolutionIndex].idLinks(linkIDs));
