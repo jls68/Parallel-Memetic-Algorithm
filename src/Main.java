@@ -85,10 +85,8 @@ public class Main {
                 }
             }
         } catch (FileNotFoundException e) {
-            //TODO
             e.printStackTrace();
         } catch (IOException e) {
-            //TODO
             e.printStackTrace();
         }
     }
