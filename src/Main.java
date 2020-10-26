@@ -30,6 +30,7 @@ public class Main {
     private static boolean plusInsteadOfComma;
     private static double tMax;
     private static int kMax;
+    private static boolean VND;
 
     // Global variables for measuring performance
     protected static int runConversions;
@@ -116,6 +117,7 @@ public class Main {
         tMax = 1;
         kMax = 1;
         rand = new Random();
+        VND = true;
 
         try {
             if (args.length == 0) {
@@ -203,10 +205,14 @@ public class Main {
                             kMax = Integer.parseInt(args[i + 1]);
                             i++;
                         }
+                        // Optional argument of -localSearch to do local search instead of VND
+                        else if (args[i].equals("-localSearch")) {
+                            VND = false;
+                        }
                     }
                 }
 
-                //Check that the synchronous number of cores is greater than the number of links
+                //Check that the synchronous number of cores is not greater than the number of links
                 if(synchronous_n_pr > linkLengths.length){
                     synchronous_n_pr = linkLengths.length;
                 }
@@ -232,6 +238,9 @@ public class Main {
                     searches[i] = runSearches;
                 }
                 System.out.println("============== Done ==============");
+                if(VND == false){
+                    System.out.print("VND not used " );
+                }
                 System.out.println("Dataset = " + filePath + ", number of nodes = " + numberOfNodes + ", max degree = " + maxConnection +
                         ", tMax = " + tMax + ", kMax = " + kMax +
                         ", Replicated = " + replicated_n_pr + ", Synchronous = " + synchronous_n_pr +
@@ -282,7 +291,7 @@ public class Main {
         Search[] searches = new Search[replicated_n_pr];
         for (int i = 0; i < replicated_n_pr; i++) {
             searches[i] = new Search(rand, popSize, numParents, numChildren, numberOfNodes, numberOfUniqueLinks, maxConnection, synchronous_n_pr,
-                    linkLengths, mutatePercent, preservePercent, sectionInheritance, plusInsteadOfComma, tMax, kMax);
+                    linkLengths, mutatePercent, preservePercent, sectionInheritance, plusInsteadOfComma, tMax, kMax, VND);
         }
 
         List<Callable<Genotype>> tasks = new ArrayList<Callable<Genotype>>();

@@ -24,10 +24,11 @@ public class Search extends Thread{
     double tMax;
     int kMax;
     long initialRunTime;
+    boolean VND;
 
 
     Search(Random rand, int popSize, int numParents, int numChildren, int numberOfNodes, int numberOfUniqueLinks, int maxConnection, int VNDn_pr, int[] linkLengths,
-           double mutatePercent, double preservePercent, boolean sectionInheritance, boolean plusInsteadOfComma, double tMax, int kMax){
+           double mutatePercent, double preservePercent, boolean sectionInheritance, boolean plusInsteadOfComma, double tMax, int kMax, boolean VND){
         convergeAmount = 0;
         searchAmount = 0;
         this.rand = rand;
@@ -111,7 +112,12 @@ public class Search extends Thread{
             Genotype s = GenerateRandomConfiguration();
 
             // Preform local Search
-            s = VND(s);
+            if(VND) {
+                s = VND(s);
+            }
+            else {
+                s = LocalSearch(s);
+            }
 
             // Add the new solution to the population
             pop.Insert(i, s);
@@ -209,6 +215,21 @@ public class Search extends Thread{
     private static Genotype compute(SynchronousSearch search) throws InterruptedException {
         search.run();
         return search.getResult();
+    }
+
+    private Genotype LocalSearch(Genotype currentGeno){
+        List<Integer> currentPheno = Growth(currentGeno);
+        do{
+            Genotype newGeno = GenerateNeighbour(currentGeno);
+            newGeno = Repair(newGeno);
+            List<Integer> newPheno = Growth(newGeno);
+            if(IsBetterThan(newPheno, currentPheno)){
+                currentGeno = newGeno;
+                    currentPheno = newPheno;
+                }
+        } while(!TerminationCriterion(tMax / kMax));
+        searchAmount++;
+        return currentGeno;
     }
 
     /**
@@ -521,7 +542,12 @@ public class Search extends Thread{
         }
         for(int i = numberPreserved; i < popSize; i++){
             Genotype s = GenerateRandomConfiguration();
-            s = VND(s);
+            if(VND) {
+                s = VND(s);
+            }
+            else{
+                s = LocalSearch(s);
+            }
             newpop.Insert(i, s);
         }
         return newpop;
