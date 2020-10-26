@@ -20,13 +20,13 @@ public class Search extends Thread{
     boolean sectionInheritance;
     boolean plusInsteadOfComma;
     Genotype bestSolution;
-    long tMax;
+    double tMax;
     int kMax;
     long initialRunTime;
 
 
     Search(Random rand, int popSize, int numParents, int numChildren, int numberOfNodes, int numberOfUniqueLinks, int maxConnection, int VNDn_pr, int[] linkLengths,
-           double mutatePercent, double preservePercent, boolean sectionInheritance, boolean plusInsteadOfComma, long tMax, int kMax){
+           double mutatePercent, double preservePercent, boolean sectionInheritance, boolean plusInsteadOfComma, double tMax, int kMax){
         convergeAmount = 0;
         this.rand = rand;
         this.popSize = popSize;
@@ -81,10 +81,12 @@ public class Search extends Thread{
         //Please do not remove or change the format of this output message
         System.out.println("Thread  " + this.getId() + " finished execution in " + (finalTime - initialRunTime) / 1E9 + " secs. Converged " + convergeAmount + " times.");
 
-        Main.runConversions += convergeAmount;
+        addConverge(convergeAmount);
     }
 
-
+    private synchronized void addConverge(int convergeAmount){
+        Main.runConversions += convergeAmount;
+    }
 
     /**
      * Clever method to get starting population
@@ -523,7 +525,7 @@ public class Search extends Thread{
      * @param maxTime the max amount of time for the search to go for
      * @return true if the max time has elapsed or there have been too many convergences
      */
-    private boolean TerminationCriterion(long maxTime){
+    private boolean TerminationCriterion(double maxTime){
         final long finalTime = System.nanoTime();
        if( (finalTime - initialRunTime) / 1E9 > maxTime)
         return true;
