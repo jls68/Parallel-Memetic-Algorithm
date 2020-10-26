@@ -80,6 +80,8 @@ public class Search extends Thread{
         long finalTime = System.nanoTime();
         //Please do not remove or change the format of this output message
         System.out.println("Thread  " + this.getId() + " finished execution in " + (finalTime - initialRunTime) / 1E9 + " secs. Converged " + convergeAmount + " times.");
+
+        Main.runConversions += convergeAmount;
     }
 
 

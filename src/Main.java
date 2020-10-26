@@ -10,12 +10,19 @@ import java.util.concurrent.*;
 public class Main {
 
     private static int IMPOSSIBLE_CONNECTION = 1000;
+    private static int RUNS = 10;
 
     // Global variables to be read in by readCSV method
     private static int numberOfNodes;
+    private static int maxConnection;
     private static int numberOfUniqueLinks;
     private static int[] linkLengths;
     private static String[] linkIDs;
+
+    // Global variables to record peformance
+    private static Genotype[] runSolutions;
+    private static int[] conversions;
+    protected static int runConversions;
 
     /**
      * Read in the information from the csv file
@@ -85,17 +92,16 @@ public class Main {
  * -tMax [maxRunTime]");
 **/
 
-public static void doRuns(String[] args){
+public static Genotype doRun(String[] args){
     // Set default parameters
     int n_pr =  Runtime.getRuntime().availableProcessors();
     int VNDn_pr =  1;
     int popSize = 8;
     int numParents = 2;
-    int numChildren = 4; // TODO Allow the number of children to be set
-    int maxConnection;
+    int numChildren = 4;
     double preservePercent = 0.2;
     double mutatePercent = 0.2;
-    boolean sectionInheritance = true;
+    boolean sectionInheritance = false;
     boolean plusInsteadOfComma = true;
     boolean replicatedInsteadOfSynchronous = true;
     long tMax = 1;
@@ -129,10 +135,14 @@ public static void doRuns(String[] args){
                         popSize = Integer.parseInt(args[i + 1]);
                         i++;
                     }
-
                     // Optional -parents argument followed by an integer is the number of parents
                     else if (args[i].equals("-parents")) {
                         numParents = Integer.parseInt(args[i + 1]);
+                        i++;
+                    }
+                    // Optional -children argument followed by an integer is the number of parents
+                    else if (args[i].equals("-children")) {
+                        numChildren = Integer.parseInt(args[i + 1]);
                         i++;
                     }
                     // Optional -preserve argument followed by a double is the preserve Percent
@@ -150,15 +160,21 @@ public static void doRuns(String[] args){
                         plusInsteadOfComma = true;
                     }
                     else if (args[i].equals("-comma") ) {
-                        plusInsteadOfComma = true;
+                        plusInsteadOfComma = false;
                     }
                     // Optional argument of -replicated or -synchronous to select the parallelism method and
                     //  followed by an integer to choose the number cores to use
                     else if (args[i].equals("-replicated") ) {
                         replicatedInsteadOfSynchronous = true;
+                        n_pr = Integer.parseInt(args[i + 1]);
+                        i++;
                     }
                     else if (args[i].equals("-synchronous") ) {
                         replicatedInsteadOfSynchronous = false;
+                    }
+                    // Optional argument of -blockInherit to select children to inherit bytes instead of bits, a karger group from each parent
+                    else if (args[i].equals("-blockInherit") ) {
+                        sectionInheritance = true;
                     }
                     // Optional argument of -tMax followed by a long is the max time to search
                     else if (args[i].equals("-tMax")) {
@@ -241,22 +257,28 @@ public static void doRuns(String[] args){
             System.out.println("Phenotype: " + solutionPhenotype.toString());
             System.out.println(bestSolution.idLinks(linkIDs));
             System.out.println("Score: " + bestScore);
+
+            return bestSolution;
         }
 
     } catch (NumberFormatException | InterruptedException | ExecutionException e) {
         //TODO
         e.printStackTrace();
     }
-
+    return null;
 }
 
     public static void main(String[] args) throws InterruptedException, ExecutionException {
-    int numRuns = 10;
-        for(int i = 0; i < numRuns; i++){
+        conversions = new int[RUNS];
+        runSolutions = new Genotype[RUNS];
+        for(int i = 0; i < RUNS; i++){
+            runConversions = 0;
             System.out.println("=======================");
             System.out.println("Run number " + (i+1) + ":");
             System.out.println("=======================");
-            doRuns(args);
+            runSolutions[i] = doRun(args);
+            conversions[i] = runConversions;
         }
+        System.out.println("number of nodes\t" + numberOfNodes);
     }
 }
